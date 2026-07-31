@@ -1,6 +1,12 @@
 import { gatherSpeech, sayAndHangup, sendSms, texml } from "@/lib/server/a1";
 import { agentTurn } from "@/lib/server/llm";
-import { serverState } from "@/lib/server/state";
+import {
+  getBakery,
+  getLead,
+  getSession,
+  saveSession,
+  upsertLead,
+} from "@/lib/server/state";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -11,11 +17,11 @@ export async function POST(req: Request) {
   const callSid = String(form.get("CallSid") ?? "");
   const speech = String(form.get("SpeechResult") ?? "").trim();
 
-  const session = serverState.sessions.get(callSid);
+  const session = await getSession(callSid);
   if (!session || session.done) {
     return texml(sayAndHangup("Thanks for calling. Goodbye!"));
   }
-  const lead = serverState.leads.get(session.leadId);
+  const lead = await getLead(session.leadId);
 
   if (!speech) {
     const reprompt = "Sorry, I didn't catch that — could you say it again?";
@@ -25,7 +31,8 @@ export async function POST(req: Request) {
   session.messages.push({ role: "user", content: speech });
   lead?.transcript.push({ speaker: "customer", text: speech });
 
-  const turn = await agentTurn(serverState.bakery, session.messages);
+  const bakery = await getBakery();
+  const turn = await agentTurn(bakery, session.messages);
 
   session.messages.push({ role: "assistant", content: turn.say });
   lead?.transcript.push({ speaker: "agent", text: turn.say });
@@ -42,9 +49,11 @@ export async function POST(req: Request) {
         ? `Call customer back: ${turn.order.callbackTime}`
         : "Call customer back with a quote";
     }
+    await saveSession(session);
+    if (lead) await upsertLead(lead);
 
     // Best-effort SMS receipt — only delivers if the caller's number is OTP-verified.
-    const bakeryName = serverState.bakery?.name ?? "The bakery";
+    const bakeryName = bakery?.name ?? "The bakery";
     void sendSms(
       session.from,
       `${bakeryName}: thanks${turn.customerName ? ` ${turn.customerName}` : ""}! We got your cake request${
@@ -55,5 +64,7 @@ export async function POST(req: Request) {
     return texml(sayAndHangup(turn.say));
   }
 
+  await saveSession(session);
+  if (lead) await upsertLead(lead);
   return texml(gatherSpeech(turn.say, "/api/voice/turn"));
 }
