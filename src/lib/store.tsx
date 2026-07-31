@@ -22,7 +22,9 @@ interface AppStore extends AppState {
   busy: boolean;
   saveBakery: (bakery: Bakery) => Promise<void>;
   generateCampaign: () => Promise<void>;
-  launchCampaign: () => void;
+  launchCampaign: () => Promise<
+    { threadId: string; runId: string } | { error: string }
+  >;
   simulateIncomingLead: () => Promise<void>;
   startAiCall: (leadId: string) => Promise<string | null>;
   updateLeadStatus: (leadId: string, status: Lead["status"]) => void;
@@ -114,17 +116,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh, send]);
 
-  const launchCampaign = useCallback(() => {
-    const { campaign } = stateRef.current;
-    if (!campaign) return;
-    const launched: Campaign = {
-      ...campaign,
-      status: "active",
-      launchedAt: Date.now(),
-    };
-    setState((s) => ({ ...s, campaign: launched }));
-    void send("/api/campaign", "POST", launched);
-  }, [send]);
+  /** Hands the campaign to Pixero to publish into the Meta ad account. */
+  const launchCampaign = useCallback(async () => {
+    const res = await send("/api/campaign/launch", "POST");
+    await refresh();
+    if (!res) return { error: "Server unreachable — try again." };
+    const data = (await res.json().catch(() => null)) as {
+      threadId?: string;
+      runId?: string;
+      error?: string;
+    } | null;
+    if (!res.ok || !data?.threadId || !data.runId) {
+      return { error: data?.error ?? `Launch failed (${res?.status}).` };
+    }
+    return { threadId: data.threadId, runId: data.runId };
+  }, [refresh, send]);
 
   const simulateIncomingLead = useCallback(async () => {
     await send("/api/leads/simulate", "POST");

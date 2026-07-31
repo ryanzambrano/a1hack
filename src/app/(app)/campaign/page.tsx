@@ -1,15 +1,165 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/store";
+
+interface MetaCampaign {
+  name: string;
+  live: boolean;
+  ads: { name: string; adsetName: string; status: string }[];
+}
+
+/** "Show the ads and the campaign that's live" — pulled through Pixero MCP. */
+function MetaLivePanel() {
+  const [campaigns, setCampaigns] = useState<MetaCampaign[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+
+  const publish = async () => {
+    setPublishing(true);
+    setPublishMsg(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/campaign/launch-meta", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setPublishMsg(
+        `Published to ${data.adAccountId} (created paused). ${data.publish}`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Publish failed");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/pixero/ads");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setCampaigns(data.campaigns);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load ads");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            Live on Meta
+          </h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Ads and campaigns from your connected Pixero workspace.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void publish()}
+            disabled={publishing}
+            className="rounded-xl bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-900 disabled:opacity-50"
+          >
+            {publishing ? "Publishing via Pixero…" : "Publish to Meta"}
+          </button>
+          <button
+            onClick={() => void load()}
+            disabled={loading}
+            className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+          >
+            {loading
+              ? "Fetching from Pixero…"
+              : campaigns
+                ? "↻ Refresh"
+                : "Show live ads"}
+          </button>
+        </div>
+      </div>
+
+      {publishing && (
+        <p className="mt-3 text-sm text-stone-500">
+          Pixero is staging the creative and launch plan — this takes a couple
+          of minutes. The campaign is created paused, so nothing spends yet.
+        </p>
+      )}
+      {publishMsg && (
+        <p className="mt-3 whitespace-pre-wrap text-sm text-emerald-700">
+          {publishMsg}
+        </p>
+      )}
+      {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+      {campaigns && campaigns.length === 0 && (
+        <p className="mt-3 text-sm text-stone-500">
+          No ads visible on the connected Meta accounts yet.
+        </p>
+      )}
+
+      {campaigns && campaigns.length > 0 && (
+        <div className="mt-4 space-y-4">
+          {campaigns.map((c) => (
+            <div key={c.name} className="rounded-xl border border-stone-100 p-4">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    c.live
+                      ? "bg-green-100 text-green-700"
+                      : "bg-stone-100 text-stone-500"
+                  }`}
+                >
+                  {c.live ? "● Live" : "Paused"}
+                </span>
+                <p className="font-semibold text-stone-800">{c.name}</p>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {c.ads.map((ad, i) => (
+                  <li
+                    key={`${ad.name}-${i}`}
+                    className="flex items-center gap-2 text-sm text-stone-600"
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        ad.status === "ACTIVE" ? "bg-green-500" : "bg-stone-300"
+                      }`}
+                    />
+                    {ad.name}
+                    {ad.adsetName && (
+                      <span className="text-xs text-stone-400">
+                        · {ad.adsetName}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CampaignPage() {
   const { bakery, campaign, hydrated, busy, launchCampaign, generateCampaign } =
     useApp();
-  const router = useRouter();
   const [launching, setLaunching] = useState(false);
+  const [deployStatus, setDeployStatus] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    },
+    []
+  );
 
   if (!hydrated) return null;
 
@@ -33,10 +183,41 @@ export default function CampaignPage() {
 
   const live = campaign.status === "active";
 
-  const handleLaunch = () => {
+  const handleLaunch = async () => {
     setLaunching(true);
-    launchCampaign();
-    setTimeout(() => router.push("/leads"), 1800);
+    setDeployStatus("Handing the campaign to Pixero…");
+    const result = await launchCampaign();
+    if ("error" in result) {
+      setDeployStatus(`Launch failed: ${result.error}`);
+      setLaunching(false);
+      return;
+    }
+    setDeployStatus(
+      "Pixero is generating the creative and publishing to your Meta ad account… (a few minutes)"
+    );
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/campaign/launch?threadId=${result.threadId}&runId=${result.runId}`
+        );
+        const s = (await res.json()) as {
+          status?: string;
+          finalMessage?: string | null;
+          error?: string;
+        };
+        if (s.status === "success") {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setDeployStatus(`✅ Deployed to Meta. ${s.finalMessage ?? ""}`);
+        } else if (s.status === "error" || s.error) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setDeployStatus(
+            `Deploy failed: ${s.error ?? s.finalMessage ?? "unknown error"}`
+          );
+        }
+      } catch {
+        /* transient poll failure — keep polling */
+      }
+    }, 5000);
   };
 
   return (
@@ -124,6 +305,12 @@ export default function CampaignPage() {
             </ol>
           </div>
 
+          {deployStatus && (
+            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 whitespace-pre-wrap">
+              {deployStatus}
+            </div>
+          )}
+
           {live ? (
             <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 p-5">
               <p className="text-sm font-medium text-green-800">
@@ -156,6 +343,8 @@ export default function CampaignPage() {
           )}
         </div>
       </div>
+
+      <MetaLivePanel />
     </div>
   );
 }

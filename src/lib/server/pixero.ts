@@ -140,6 +140,105 @@ export async function getPixeroToken(): Promise<string | null> {
   return tokens.access_token;
 }
 
+/* ------------------------------ MCP client ------------------------------ */
+
+const MCP_URL = `${PIXERO_BASE}/api/mcp`;
+
+function parseJsonRpc(text: string, contentType: string): unknown {
+  // Streamable HTTP may answer as SSE — the JSON-RPC response rides a data: line.
+  if (contentType.includes("text/event-stream")) {
+    for (const line of text.split("\n")) {
+      if (line.startsWith("data:")) {
+        try {
+          return JSON.parse(line.slice(5).trim());
+        } catch {
+          /* keep scanning */
+        }
+      }
+    }
+    throw new Error("no JSON-RPC payload in SSE response");
+  }
+  return JSON.parse(text);
+}
+
+async function mcpRequest(
+  token: string,
+  sessionId: string | null,
+  body: object
+): Promise<{ payload: unknown; sessionId: string | null }> {
+  const res = await fetch(MCP_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      ...(sessionId ? { "mcp-session-id": sessionId } : {}),
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) {
+    throw new Error(`Pixero MCP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  }
+  const newSession = res.headers.get("mcp-session-id") ?? sessionId;
+  if (res.status === 202) return { payload: null, sessionId: newSession };
+  const payload = parseJsonRpc(
+    await res.text(),
+    res.headers.get("content-type") ?? ""
+  );
+  return { payload, sessionId: newSession };
+}
+
+/**
+ * Call one Pixero MCP tool as the connected workspace.
+ * Opens a fresh MCP session per call — fine at our volume.
+ */
+export async function pixeroTool<T = unknown>(
+  name: string,
+  args: Record<string, unknown>
+): Promise<T> {
+  const token = await getPixeroToken();
+  if (!token) throw new Error("Pixero is not connected — visit /api/pixero/connect.");
+
+  const init = await mcpRequest(token, null, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-03-26",
+      capabilities: {},
+      clientInfo: { name: "sweetleads", version: "1.0" },
+    },
+  });
+  await mcpRequest(token, init.sessionId, {
+    jsonrpc: "2.0",
+    method: "notifications/initialized",
+  }).catch(() => undefined);
+
+  const { payload } = await mcpRequest(token, init.sessionId, {
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/call",
+    params: { name, arguments: args },
+  });
+
+  const rpc = payload as {
+    error?: { message?: string };
+    result?: { isError?: boolean; content?: { type: string; text?: string }[] };
+  };
+  if (rpc.error) throw new Error(`Pixero ${name}: ${rpc.error.message}`);
+  const text = (rpc.result?.content ?? [])
+    .filter((c) => c.type === "text")
+    .map((c) => c.text ?? "")
+    .join("");
+  if (rpc.result?.isError) throw new Error(`Pixero ${name}: ${text.slice(0, 300)}`);
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
+  }
+}
+
 /** Authenticated fetch against pixero.ai on behalf of the workspace. */
 export async function pixeroFetch(path: string, init?: RequestInit): Promise<Response> {
   const token = await getPixeroToken();
