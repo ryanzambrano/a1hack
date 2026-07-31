@@ -73,21 +73,33 @@ export async function agentTurn(
   bakery: Bakery | null,
   messages: ChatMessage[]
 ): Promise<AgentTurn> {
-  const res = await fetch(`${process.env.A1_GATEWAY_BASE}/responses`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.A1_GATEWAY_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.A1_MODEL || "openai.gpt-5.6-luna",
-      input: [
-        { role: "system", content: systemPrompt(bakery) },
-        ...messages,
-      ],
-      max_output_tokens: 4000,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${process.env.A1_GATEWAY_BASE}/responses`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.A1_GATEWAY_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.A1_MODEL || "openai.gpt-5.6-terra",
+        input: [
+          { role: "system", content: systemPrompt(bakery) },
+          ...messages,
+        ],
+        max_output_tokens: 4000,
+      }),
+      // The gateway sometimes hangs indefinitely (luna/sol outage July 31) —
+      // a caller hearing 12s of silence is better than a 60s function timeout.
+      signal: AbortSignal.timeout(12_000),
+    });
+  } catch (err) {
+    console.error("gateway unreachable", err);
+    return {
+      say: "Sorry, I'm having trouble hearing you — could you say that once more?",
+      done: false,
+    };
+  }
 
   if (!res.ok) {
     const body = await res.text();
