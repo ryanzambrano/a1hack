@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/product.css">
+  <script type="module" src="./scripts/product.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html">
+        <span class="brand-name" id="bakery-name">Bakeriet på Hjørnet</span>
+        <span class="brand-sub">Håndverksbakeri</span>
+      </a>
+      <a class="cart-link" href="./cart.html" id="cart-link" aria-label="Handlekurv">
+        <span>Handlekurv</span>
+        <span class="cart-badge" id="cart-badge" hidden>0</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container" id="main">
+    <a class="back-link" href="./index.html">&larr; Tilbake til utvalget</a>
+
+    <p class="page-status muted" id="loading">Laster inn produktet...</p>
+
+    <div class="page-status card error-card" id="error" hidden>
+      <h2>Så dumt!</h2>
+      <p id="error-message"></p>
+      <div class="error-actions">
+        <a class="btn" href="./index.html">Tilbake til butikken</a>
+        <button type="button" class="btn" id="retry-btn" hidden>Prøv igjen</button>
+      </div>
+    </div>
+
+    <article id="product" hidden>
+      <div class="product-layout">
+        <div class="product-media card" id="product-media">
+          <div class="media-frame">
+            <img id="product-image" alt="">
+          </div>
+        </div>
+
+        <div class="product-info">
+          <p class="product-meta">
+            <span class="badge" id="product-category"></span>
+            <span class="lead-note muted" id="lead-note"></span>
+          </p>
+          <h1 id="product-name"></h1>
+          <p class="product-desc" id="product-desc"></p>
+
+          <form id="config-form" novalidate>
+            <div id="option-groups"></div>
+
+            <div class="cake-text-block" id="cake-text-block" hidden>
+              <label for="cake-text">Tekst på kaken
+                <span class="cake-text-price muted" id="cake-text-price"></span>
+              </label>
+              <input type="text" id="cake-text" maxlength="60" autocomplete="off"
+                     placeholder="F.eks. Gratulerer med dagen, Nora!">
+              <p class="char-counter muted" id="char-counter" aria-live="polite">0/60 tegn</p>
+            </div>
+
+            <div class="qty-block">
+              <label for="qty-input">Antall</label>
+              <div class="qty-row">
+                <button type="button" class="qty-btn" id="qty-minus" aria-label="Færre">&minus;</button>
+                <input type="number" id="qty-input" value="1" min="1" max="50" step="1" inputmode="numeric">
+                <button type="button" class="qty-btn" id="qty-plus" aria-label="Flere">+</button>
+              </div>
+            </div>
+
+            <div class="total-row">
+              <span class="total-label">Totalt</span>
+              <span class="price total-price" id="total-price">kr 0</span>
+              <span class="vat-note muted">inkl. mva</span>
+            </div>
+            <p class="unit-note muted" id="unit-note" hidden></p>
+
+            <button type="submit" class="btn btn-primary add-btn" id="add-btn">Legg i handlekurv</button>
+          </form>
+
+          <div class="feedback card" id="feedback" role="status" hidden>
+            <p class="feedback-title" id="feedback-title">Lagt i handlekurven!</p>
+            <p class="feedback-sub muted" id="feedback-sub">Vi gleder oss til å bake for deg.</p>
+            <div class="feedback-links">
+              <a class="btn" href="./cart.html">Til handlekurven</a>
+              <a class="btn" href="./index.html">Fortsett å handle</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-name" id="footer-name">Bakeriet på Hjørnet</p>
+      <address class="footer-contact">
+        <span id="footer-address"></span><br>
+        <a id="footer-phone" href="#"></a><br>
+        <a id="footer-email" href="#"></a>
+      </address>
+      <p class="footer-note">Alle priser er inkl. mva.</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,352 @@
+/* ============================================================
+   Responsive overrides — shared mobile + iPad treatment loaded
+   on every HTML page AFTER its own stylesheets so it wins the
+   cascade. All rules are scoped inside @media queries so the
+   desktop layout is untouched by design.
+
+   Breakpoints:
+     1024px  — iPad portrait + smaller (collapse the heaviest
+               grids, give the footer some air).
+     768px   — phones + iPad-mini portrait (fluid wrappers,
+               horizontal-scroll tables, single-col footers,
+               touch-sized chrome, map height clamps).
+     540px   — phones (iOS-zoom-proof inputs, full-width
+               primary buttons, dropdown re-anchor, tighter nav
+               pill, chip + button tap target floors).
+
+   Where a single page needs more than the shared treatment, the
+   file-specific CSS overrides this one (loaded earlier in head).
+   ============================================================ */
+
+/* ============================================================
+   Global horizontal-overflow guard. Several marketing pages place
+   decorative, blurred orbs behind the hero with a negative
+   horizontal inset (.hero-bg { inset: -120px -40px }). `body`
+   carries `overflow-x: hidden`, but the root element can still
+   scroll, so those orbs add ~40px of phantom side-scroll on a
+   phone. `overflow-x: clip` on the root contains it WITHOUT
+   creating a scroll container (so the sticky header keeps working,
+   unlike `overflow: hidden`). Intentional horizontal scrollers
+   (carousels, data tables) are nested descendants and are
+   unaffected.
+
+   Clip BOTH html and body: mobile browsers compute the initial
+   page scale / layout viewport from the page's scrollable
+   overflow, and clipping only the root is not enough to stop a
+   decorative element that pokes past the viewport (blurred orbs,
+   rotated tickers) from making the whole page pannable sideways
+   on a phone. `clip` does not create a scroll container, so
+   position: sticky keeps working on both elements.
+   ============================================================ */
+html,
+body {
+  overflow-x: clip;
+}
+@supports not (overflow-x: clip) {
+  /* Old engines: clip falls back to hidden on the root only, so
+     the sticky header (which needs body to not be a scroll
+     container) keeps working. */
+  html { overflow-x: hidden; }
+}
+
+/* ============================================================
+   iPad portrait + smaller — collapse the heaviest grids.
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Customer-side dashboards stop pretending they have a 1200px
+     gutter to work with. */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   ≤ 768px — phones + iPad portrait.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ---- Wrappers go fluid. Customer + bakery + landing all
+          carry a .wrap with max-width: 1200/980px that locked
+          content above the viewport; clamp it to viewport with
+          a sensible gutter instead. ---- */
+  .wrap {
+    max-width: 100%;
+    padding-left: clamp(14px, 4vw, 24px);
+    padding-right: clamp(14px, 4vw, 24px);
+  }
+
+  /* ---- Hero / two-col grids stack instead of cramming.
+          minmax(0, 1fr) instead of 1fr: a plain 1fr track refuses
+          to shrink below its content's min-content width (e.g. the
+          integrations tile cluster), silently pushing the page wider
+          than the viewport. ---- */
+  .hero,
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* ---- Decorative hero orbs: pull the negative horizontal inset
+          back to 0 so the blurred glow can't push past the
+          viewport edge (the root-level clip above is the safety
+          net; this removes the cause). ---- */
+  .hero-bg {
+    inset: -80px 0;
+  }
+
+  /* ---- Orbs go static + lighter on phones: animating several
+          60px-blur layers burns GPU/battery and janks scrolling
+          on mid-range devices. ---- */
+  .hero-bg span {
+    animation: none;
+    filter: blur(40px);
+  }
+
+  /* ---- Underlined ghost links ("talk to us", "contact us")
+          get a real thumb-sized tap target without changing
+          their look. ---- */
+  .btn.ghost {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* ---- Hero CTA row (landing pages): stack and let the primary
+          action span the column so it's an easy thumb target; the
+          ghost "talk to us" link sits beneath it. Scoped to the
+          landing `.btn` shape so the VC/customer `.btn-primary`
+          stacks are left to their own files. ---- */
+  .cta-row .btn:not(.ghost) {
+    width: 100%;
+    justify-content: center;
+  }
+  .cta-row .btn.ghost {
+    align-self: center;
+  }
+
+  /* ---- Data tables — wrap in a horizontal scroller so a wide
+          recipient table doesn't push the whole page sideways.
+          (Applies to mapping-table on customer wizard,
+          data-table everywhere, and any plain <table> the admin
+          surface renders inside a card.) ---- */
+  .mapping-table,
+  .data-table,
+  .admin-shell table,
+  .orders-card table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Admin nav tabs scroll horizontally if they won't fit.
+          On a 6-tab admin nav this is the difference between
+          "wrap into 3 rows" and "swipe to the right tab". ---- */
+  .nav__group--tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    /* Add a slim gradient hint at the right edge so it's
+       obvious the row scrolls. */
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  /* ---- Site-chrome nav pill loosens. Original padding
+          (14px 20px 14px 30px) + 6px shadow eats the viewport
+          on a 390px phone. ---- */
+  nav.top {
+    padding: 10px 14px;
+    margin-top: 6px;
+    border-radius: 22px;
+    box-shadow: 4px 4px 0 var(--ink, #0A0A0A);
+    gap: 8px;
+  }
+  .site-header.shrink nav.top {
+    padding: 7px 10px;
+    margin-top: 4px;
+    gap: 6px;
+    box-shadow: 3px 3px 0 var(--ink, #0A0A0A);
+  }
+  nav.top .nav-left { gap: 12px; }
+  .site-header.shrink nav.top .nav-left { gap: 8px; }
+  /* The centered link group (Delivery zones, dropdown, Contact) collapses —
+     site-chrome's hamburger menu re-exposes those links on phones. */
+  nav.top .nav-center { display: none; }
+  nav.top .nav-right { gap: 18px; }
+  .site-header.shrink nav.top .nav-right { gap: 12px; }
+  nav.top .nav-right > a:not(.btn) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* ---- Footer: looser link spacing + real tap area. The footer
+          link lists pack to ~26px row pitch on desktop, which is a
+          cramped target on a phone. Give each link vertical
+          padding and the rows more breathing room. ---- */
+  .tail-col li { margin-bottom: 4px; }
+  .tail-col li a,
+  .tail-social a,
+  .tail-bottom a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+  .tail-social { gap: 12px 24px; }
+
+  /* ---- Hide the announcement bar at small widths instead of
+          letting the long copy wrap to three lines on a phone. ---- */
+  .announce { display: none; }
+
+  /* ---- Map containers: don't let .map-full's 100vh-200px
+          calc render the sidebar off-screen on a 667px phone. ---- */
+  .map-full {
+    height: clamp(280px, 60vh, 480px);
+    min-height: 280px;
+  }
+
+  /* ---- Modal cards never exceed viewport height. ---- */
+  .modal-card,
+  .modal,
+  .modal-shell .modal-card {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- dm-surface-nav: brand cluster can wrap below the auth
+          indicator when it has to. ---- */
+  .site-nav,
+  .nav.page {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ---- Customer campaign receipt grid collapses to a single
+          column so amounts aren't on a 60-character line. ---- */
+  .campaign-receipt__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* ---- Bakery per-cake photo grid: prefer 2 columns on iPad
+          portrait, 1 column on phones. The base file goes from
+          1 to 3 with no middle. ---- */
+  .photo-trail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ---- Onboarding wizard cards loose their two-col stat
+          rows. ---- */
+  .wizard__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   ≤ 540px — phones.
+   ============================================================ */
+@media (max-width: 540px) {
+  /* ---- iOS auto-zoom prevention. Any text input under 16px
+          makes Safari zoom the viewport on focus, which then
+          requires a manual pinch to return — extremely
+          disorienting. Force 16px on every focusable field; the
+          difference at desktop sizes is invisible because PC
+          users don't hit this query. ---- */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    /* !important so it beats per-page field styling (e.g. the VC
+       apply form scopes textareas to 15px). The fixed 16px is the
+       exact iOS no-zoom threshold; any larger intentional field is
+       rare in these forms and a 1px shave is invisible. */
+    font-size: 16px !important;
+  }
+
+  /* ---- Form field rows that stayed side-by-side on big phones
+          now stack. ---- */
+  .field-row,
+  .form-grid,
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* ---- Primary buttons go full-width on phones so they're easy
+          to thumb-tap. Inline-flex buttons that only need to be
+          opt-in keep using their own class. ---- */
+  .btn-primary,
+  .btn-secondary,
+  .btn.nav-cta {
+    width: 100%;
+    justify-content: center;
+    max-width: none;
+  }
+
+  /* ---- Touch targets: chips, pills, filter buttons all hit a
+          36px minimum so they're tappable without ambiguity. ---- */
+  .filter-chip,
+  .status-pill,
+  .auth-btn-sign-in,
+  .auth-btn-sign-up {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ---- Modal close button (admin + bakery): bump above the
+          44px minimum tap target. ---- */
+  .modal__close,
+  .modal-card__close {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  /* ---- Dropdown menu: on a phone the trigger sits mid-nav, so
+          anchoring the 280px menu to the trigger's right edge
+          pushed it ~100px off the LEFT of the screen. Pin it to
+          the viewport instead (fixed, inset 12px both sides) so it
+          always opens fully on-screen, directly under the sticky
+          nav pill. The little caret is dropped — it no longer
+          points at the trigger once the menu spans the width. ---- */
+  .site-header .dropdown-menu {
+    position: fixed;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    min-width: 0;
+    width: auto;
+    transform: none;
+  }
+  .site-header.shrink .dropdown-menu { top: 54px; }
+  .site-header .dropdown-menu::before { display: none; }
+  .site-header .dropdown-menu .item { padding: 14px 20px; }
+
+  /* ---- dm-brand: shrink the home pill and let the logo own the
+          row. ---- */
+  .dm-brand { gap: 10px; }
+  .dm-wordmark img { height: 26px; }
+  .dm-home-btn { padding: 5px 10px; font-size: 11px; }
+
+  /* ---- Tighter page padding on the legal pages so the
+          paragraph copy doesn't run edge-to-edge. ---- */
+  main.legal { padding-inline: 18px; }
+  main.legal p { font-size: 15px; line-height: 1.6; }
+  main.legal h2 { font-size: 22px; }
+}
+
+/* ============================================================
+   Notch-safe: respect safe-area on phones with a home bar
+   indicator. Applies regardless of width.
+   ============================================================ */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  .legal-mini-header {
+    padding-left: max(var(--pad, 24px), env(safe-area-inset-left));
+    padding-right: max(var(--pad, 24px), env(safe-area-inset-right));
+  }
+}

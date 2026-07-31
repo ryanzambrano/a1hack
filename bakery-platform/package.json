@@ -1,0 +1,16 @@
+{
+  "name": "bakery-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal e-commerce platform for bakeries: catalog, storefront, cart, mock checkout, order admin. Five design variants over one shared core.",
+  "scripts": {
+    "dev": "node --disable-warning=ExperimentalWarning server.js",
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "seed": "node --disable-warning=ExperimentalWarning lib/reset-db.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

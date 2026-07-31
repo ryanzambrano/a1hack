@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakeriadmin - Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div class="container admin-header-inner">
+      <div>
+        <p class="admin-kicker">Bakeriadmin</p>
+        <h1 id="bakery-name">Bakeriet på Hjørnet</h1>
+      </div>
+      <nav class="admin-nav" aria-label="Sidenavigasjon">
+        <a href="./index.html">Til butikken</a>
+        <a href="./cart.html">Handlekurv<span id="cart-badge" class="cart-badge" hidden></span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tabs" role="tablist" aria-label="Adminvisninger">
+      <button class="tab is-active" id="tab-orders" type="button" role="tab" aria-selected="true" aria-controls="panel-orders">Bestillinger</button>
+      <button class="tab" id="tab-products" type="button" role="tab" aria-selected="false" aria-controls="panel-products">Produkter</button>
+    </div>
+
+    <section id="panel-orders" role="tabpanel" aria-labelledby="tab-orders">
+      <div class="toolbar">
+        <div id="status-filters" class="filters" role="group" aria-label="Filtrer på status"></div>
+        <button id="refresh-orders" class="btn btn-small" type="button">Oppdater</button>
+      </div>
+      <div id="orders-list"></div>
+    </section>
+
+    <section id="panel-products" role="tabpanel" aria-labelledby="tab-products" hidden>
+      <div class="toolbar">
+        <button id="new-product" class="btn btn-small" type="button">Nytt produkt</button>
+        <button id="refresh-products" class="btn btn-small" type="button">Oppdater</button>
+      </div>
+      <p id="products-status" class="status-note" aria-live="polite"></p>
+
+      <div id="product-form-panel" class="card product-form" hidden>
+        <h2 id="form-title">Nytt produkt</h2>
+        <form id="product-form" novalidate>
+          <div class="form-grid">
+            <div class="field field-full">
+              <label for="f-name">Navn *</label>
+              <input id="f-name" name="name" type="text" maxlength="120" autocomplete="off">
+            </div>
+            <div class="field field-full">
+              <label for="f-description">Beskrivelse</label>
+              <textarea id="f-description" name="description" rows="2"></textarea>
+            </div>
+            <div class="field">
+              <label for="f-category">Kategori</label>
+              <input id="f-category" name="category" type="text" list="category-list" autocomplete="off">
+              <datalist id="category-list"></datalist>
+            </div>
+            <div class="field">
+              <label for="f-image">Bildeadresse</label>
+              <input id="f-image" name="imageUrl" type="text" placeholder="/img/blotkake.svg" autocomplete="off">
+              <p class="hint">Tilgjengelige bilder: /img/blotkake.svg, /img/croissant.svg, /img/festkake.svg, /img/gulrotkake.svg, /img/kanelbolle.svg, /img/kransekake.svg, /img/makroner.svg, /img/sjokoladekake.svg, /img/skolebrod.svg, /img/surdeigsbrod.svg</p>
+            </div>
+            <div class="field">
+              <label for="f-baseprice">Grunnpris i kroner *</label>
+              <input id="f-baseprice" name="basePrice" type="text" inputmode="decimal" placeholder="490">
+            </div>
+            <div class="field">
+              <label for="f-leadtime">Ledetid i dager (0 til 30)</label>
+              <input id="f-leadtime" name="leadTimeDays" type="number" min="0" max="30" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="f-sortorder">Sortering (lavest vises først)</label>
+              <input id="f-sortorder" name="sortOrder" type="number" step="1" value="0">
+            </div>
+            <div class="field">
+              <label class="check-label" for="f-cantext">
+                <input id="f-cantext" name="canHaveCakeText" type="checkbox">
+                <span>Kan ha kaketekst</span>
+              </label>
+              <label for="f-caketextprice">Pris for kaketekst i kroner</label>
+              <input id="f-caketextprice" name="cakeTextPrice" type="text" inputmode="decimal" value="0">
+            </div>
+          </div>
+
+          <fieldset class="options-editor">
+            <legend>Valg og tillegg</legend>
+            <p class="hint">Rader med samme gruppenavn blir en valggruppe, i den rekkefølgen de står. Merk ett valg som standard i hver gruppe. Tillegget skrives i kroner.</p>
+            <div id="option-rows"></div>
+            <button type="button" id="add-option-row" class="btn btn-small">Legg til rad</button>
+          </fieldset>
+
+          <p id="form-error" class="form-error" role="alert" hidden></p>
+          <div class="form-actions">
+            <button type="submit" id="form-save" class="btn btn-primary">Lagre produktet</button>
+            <button type="button" id="form-cancel" class="btn">Avbryt</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="products-list"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/admin.js"></script>
+</body>
+</html>

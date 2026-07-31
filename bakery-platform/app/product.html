@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produkt - Bakeriet på Hjørnet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/product.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" id="brand-link" href="./index.html">Bakeriet på Hjørnet</a>
+      <a class="btn btn-ghost cart-link" id="cart-link" href="./cart.html" aria-label="Kurv, tom">
+        <span>Kurv</span>
+        <span class="badge badge-accent cart-badge" id="cart-badge" aria-hidden="true" hidden>0</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container" id="main">
+    <p class="back-row"><a href="./index.html">Tilbake til butikken</a></p>
+    <div id="page-root">
+      <p class="muted loading">Laster produktet...</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="muted footer-contact" id="footer-contact"></p>
+      <p class="muted footer-vat">Alle priser er inkl. mva.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/product.js"></script>
+</body>
+</html>

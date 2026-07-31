@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/catalog.css">
+</head>
+<body>
+  <header class="masthead container">
+    <div class="masthead-top">
+      <span class="kicker masthead-kicker">Håndverksbakeri</span>
+      <a class="cart-link" href="./cart.html">Handlekurv <span id="cart-badge" class="cart-badge" hidden>0</span></a>
+    </div>
+    <h1 id="shop-name" class="masthead-title">Bakeriet på Hjørnet</h1>
+    <hr class="rule rule-heavy masthead-rule">
+  </header>
+
+  <main class="container">
+    <section id="hero" class="hero" hidden></section>
+    <nav id="cat-nav" class="cat-nav" aria-label="Kategorier" hidden></nav>
+    <div id="status" class="status" role="status" aria-live="polite">Laster dagens utvalg&#8230;</div>
+    <div id="catalog"></div>
+  </main>
+
+  <footer id="footer" class="site-footer" hidden>
+    <div class="container">
+      <div class="footer-grid"></div>
+      <p class="footer-name"></p>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/catalog.js"></script>
+</body>
+</html>

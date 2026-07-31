@@ -1,0 +1,56 @@
+/* Shared brand + home treatment for the customer / bakery / admin
+   surfaces. Replaces the text wordmark on each surface with the same
+   SVG logo the landing page uses, and adds a small "Home" pill styled
+   in Daymaker fashion (off-white pill, pink stamped-shadow drop) that
+   links back to the marketing root. */
+
+.dm-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.dm-wordmark {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 0;
+}
+.dm-wordmark img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.dm-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: #FBF7EA;
+  color: #0A0A0A;
+  border: 1px solid #0A0A0A;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 #FF2D2D;
+  transform: rotate(-1deg);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.dm-home-btn:hover {
+  transform: rotate(-1deg) translate(-2px, -2px);
+  box-shadow: 5px 5px 0 #FF2D2D;
+}
+.dm-home-btn:active {
+  transform: rotate(-1deg) translate(1px, 1px);
+  box-shadow: 1px 1px 0 #FF2D2D;
+}
+
+@media (max-width: 540px) {
+  .dm-wordmark img { height: 28px; }
+  .dm-home-btn { padding: 5px 12px; font-size: 11px; }
+}

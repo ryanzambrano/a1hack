@@ -1,0 +1,350 @@
+/* Variant D "Lekent" - cart page styles. Loads after theme.css. */
+
+/* Author display rules below would otherwise beat the UA [hidden] rule */
+[hidden] {
+  display: none !important;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+/* Visible focus everywhere */
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+/* Header (same look as the storefront) */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 0 6px;
+  background: var(--bg);
+}
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.brand:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+.brand-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brand-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.cart-link {
+  flex: none;
+  position: relative;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+}
+.cart-link:hover {
+  text-decoration: none;
+}
+.cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+
+.page-title {
+  margin: 18px 0 14px;
+}
+
+/* Status card: loading, error, empty cart */
+.status-card {
+  margin: 10px 0 40px;
+  padding: 34px 20px;
+  text-align: center;
+  font-weight: 600;
+}
+.status-card h2 {
+  margin-bottom: 6px;
+}
+.status-card p {
+  font-weight: 400;
+  margin-bottom: 16px;
+}
+
+/* Layout: single column on mobile, lines + sticky summary on desktop */
+.cart-layout {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 44px;
+}
+@media (min-width: 760px) {
+  .cart-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+  .summary-card {
+    position: sticky;
+    top: 86px;
+  }
+}
+
+/* Cart lines */
+.cart-lines {
+  display: grid;
+  gap: 14px;
+}
+.cart-line {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+}
+.line-figure {
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+.cart-line:nth-child(even) .line-figure {
+  background: var(--mint);
+}
+.line-figure img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.line-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.line-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.line-name {
+  margin: 0;
+  min-width: 0;
+}
+.line-name a {
+  color: var(--ink);
+}
+.line-name a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+.remove-btn {
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--accent-strong);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 8px 14px;
+  min-height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.remove-btn:hover {
+  background: var(--accent-soft);
+}
+.line-opts,
+.line-cake,
+.line-unit {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.line-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-top: 10px;
+}
+.line-total {
+  font-size: 1.05rem;
+  margin-left: auto;
+}
+
+/* Quantity stepper */
+.qty-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.qty-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.qty-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.qty-input {
+  width: 58px;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 12px;
+}
+
+/* Summary card */
+.summary-card {
+  padding: 20px;
+}
+.summary-count {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+.total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--line);
+}
+.total-label {
+  font-weight: 700;
+}
+.total-price {
+  font-size: 1.2rem;
+}
+.vat-note {
+  margin: 2px 0 14px;
+  font-size: 0.82rem;
+  text-align: right;
+}
+.checkout-btn {
+  display: block;
+  width: 100%;
+}
+.continue-link {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 0.92rem;
+}
+
+/* Footer (same look as the storefront) */
+.site-footer {
+  padding: 8px 0 44px;
+}
+.footer-card {
+  padding: 24px 22px;
+}
+.footer-title {
+  margin-bottom: 10px;
+}
+.contact-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.contact-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.contact-label {
+  flex: none;
+  min-width: 74px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  align-self: center;
+}
+.footer-note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Tighter line cards on small phones */
+@media (max-width: 420px) {
+  .line-figure {
+    width: 68px;
+    height: 68px;
+    padding: 8px;
+  }
+  .cart-line {
+    padding: 12px;
+    gap: 10px;
+  }
+}

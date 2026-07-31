@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Produkter · Bakeriet på Hjørnet</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+  <!-- Same design system as the bakery dashboard (dm tokens + bakery surface). -->
+  <link rel="stylesheet" href="/styles/dm-tokens.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-tokens.css" />
+  <link rel="stylesheet" href="/styles/main.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery.css" />
+  <link rel="stylesheet" href="/styles/responsive.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-ui.css" />
+  <link rel="stylesheet" href="/app/styles/admin.css" />
+  <script type="module" src="/app/scripts/admin.js"></script>
+</head>
+<body class="bakery-scope">
+  <!-- The same top bar as the dashboard. -->
+  <header class="bk-top">
+    <a class="bk-top__mark" href="/app/index.html" aria-label="Til butikken">
+      <img src="/brand/daymaker-logo.svg" alt="Daymaker" />
+    </a>
+    <span class="bk-top__sep" aria-hidden="true"></span>
+    <span class="bk-top__where">Bakeriet på Hjørnet</span>
+    <span class="bk-top__right">
+      <a class="bk-top__link" href="/app/bakery">Bestillinger</a>
+      <a class="bk-top__link" href="/app/index.html">Butikk</a>
+    </span>
+  </header>
+
+  <main class="bk-shell">
+    <div class="bk-head">
+      <div>
+        <h1 class="bk-head__h">Produkter</h1>
+        <p class="bk-head__sub">Det du selger i butikken. Priser og utvalg styrer du selv.</p>
+      </div>
+      <div class="bk-head__right">
+        <button class="bk-btn bk-btn--secondary" id="refresh-products" type="button">Oppdater</button>
+        <button class="bk-btn bk-btn--primary" id="new-product" type="button">Nytt produkt</button>
+      </div>
+    </div>
+
+    <!-- Create / edit panel -->
+    <section id="product-form-wrap" class="pa-panel" hidden>
+      <form id="product-form" novalidate>
+        <h2 class="pa-panel__h" id="product-form-title">Nytt produkt</h2>
+        <div class="pa-grid">
+          <div class="pa-field">
+            <label class="pa-label" for="f-name">Navn</label>
+            <input class="bk-in" id="f-name" name="name" type="text" autocomplete="off" />
+          </div>
+          <div class="pa-field">
+            <label class="pa-label" for="f-category">Kategori</label>
+            <input class="bk-in" id="f-category" name="category" type="text" list="category-list" autocomplete="off" />
+            <datalist id="category-list"></datalist>
+          </div>
+          <div class="pa-field pa-field--wide">
+            <label class="pa-label" for="f-description">Beskrivelse</label>
+            <textarea class="bk-in" id="f-description" name="description" rows="3"></textarea>
+          </div>
+          <div class="pa-field pa-field--wide">
+            <label class="pa-label" for="f-image">Bildeadresse</label>
+            <input class="bk-in" id="f-image" name="imageUrl" type="text" list="image-list" placeholder="/img/blotkake.svg" autocomplete="off" />
+            <datalist id="image-list">
+              <option value="/img/blotkake.svg"></option>
+              <option value="/img/croissant.svg"></option>
+              <option value="/img/festkake.svg"></option>
+              <option value="/img/gulrotkake.svg"></option>
+              <option value="/img/kanelbolle.svg"></option>
+              <option value="/img/kransekake.svg"></option>
+              <option value="/img/makroner.svg"></option>
+              <option value="/img/sjokoladekake.svg"></option>
+              <option value="/img/skolebrod.svg"></option>
+              <option value="/img/surdeigsbrod.svg"></option>
+            </datalist>
+            <p class="pa-hint">Tilgjengelige bilder: blotkake, croissant, festkake, gulrotkake, kanelbolle, kransekake, makroner, sjokoladekake, skolebrod, surdeigsbrod (som /img/&lt;navn&gt;.svg).</p>
+          </div>
+          <div class="pa-field">
+            <label class="pa-label" for="f-price">Grunnpris (kr)</label>
+            <input class="bk-in bk-in--num" id="f-price" name="basePrice" type="text" inputmode="decimal" autocomplete="off" />
+          </div>
+          <div class="pa-field">
+            <label class="pa-label" for="f-leadtime">Ledetid i dager (0-30)</label>
+            <input class="bk-in bk-in--num" id="f-leadtime" name="leadTimeDays" type="number" min="0" max="30" step="1" value="0" />
+          </div>
+          <div class="pa-field">
+            <label class="pa-label" for="f-sort">Sortering</label>
+            <input class="bk-in bk-in--num" id="f-sort" name="sortOrder" type="number" step="1" value="0" />
+          </div>
+          <div class="pa-field">
+            <label class="pa-label" for="f-caketext-price">Pris for kaketekst (kr)</label>
+            <input class="bk-in bk-in--num" id="f-caketext-price" name="cakeTextPrice" type="text" inputmode="decimal" value="0" autocomplete="off" />
+          </div>
+          <div class="pa-field pa-field--wide pa-checks">
+            <label class="pa-check"><input id="f-caketext" name="canHaveCakeText" type="checkbox" /> <span>Kan ha kaketekst</span></label>
+            <label class="pa-check"><input id="f-active" name="active" type="checkbox" checked /> <span>Aktivt produkt</span></label>
+          </div>
+        </div>
+
+        <div class="pa-options">
+          <span class="pa-label">Valggrupper</span>
+          <p class="pa-hint">Valg med samme gruppenavn samles i en gruppe. Marker ett standardvalg per gruppe. Radene sendes i rekkefølgen de står.</p>
+          <div id="option-rows"></div>
+          <button class="bk-btn bk-btn--ghost bk-btn--sm" id="add-option-row" type="button">+ Legg til valg</button>
+        </div>
+
+        <div id="form-error" class="pa-error" role="alert" hidden></div>
+
+        <div class="pa-actions">
+          <button class="bk-btn bk-btn--primary" id="save-product" type="submit">Lagre</button>
+          <button class="bk-btn bk-btn--ghost" id="cancel-form" type="button">Avbryt</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="products-status" aria-live="polite"></div>
+    <div id="products-list"></div>
+
+    <!-- Error card, same shape as the dashboard's. -->
+    <section class="error-card" id="error-card" hidden>
+      <h3 class="error-card__title">Kunne ikke hente produktene</h3>
+      <p id="error-msg"></p>
+      <button class="bk-btn bk-btn--secondary" id="retry-btn" style="margin-top:12px;" type="button">Prøv igjen</button>
+    </section>
+  </main>
+</body>
+</html>

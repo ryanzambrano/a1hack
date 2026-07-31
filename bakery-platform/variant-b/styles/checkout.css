@@ -1,0 +1,167 @@
+/* Variant B "Stram" - checkout + confirmation styles. Loaded after theme.css. */
+
+/* Shared page chrome - keep in sync with the other variant-b page styles */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  z-index: 50;
+}
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-header { border-bottom: 1px solid var(--ink); }
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.brand {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.cart-badge.has-items {
+  border-color: var(--accent);
+  color: var(--accent-strong); /* AA contrast for small text */
+}
+
+.site-footer {
+  margin-top: 56px;
+  border-top: 1px solid var(--ink);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding-top: 28px;
+  padding-bottom: 44px;
+}
+.footer-grid p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+@media (min-width: 640px) {
+  .footer-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.page-main { padding-top: 32px; padding-bottom: 64px; }
+.page-head { margin-bottom: 24px; }
+.page-head .badge { margin-top: 8px; }
+
+/* Layout: summary on top at phone width, right column on wide screens. */
+.checkout-grid { display: grid; gap: 32px; }
+
+/* Order summary */
+.checkout-summary { padding: 20px; align-self: start; }
+.sum-lines { list-style: none; margin: 0; padding: 0; }
+.sum-line { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.sum-line:first-child { padding-top: 4px; }
+.sum-line-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+.sum-meta { font-size: 0.82rem; margin: 2px 0 0; overflow-wrap: anywhere; }
+.sum-total { text-align: right; padding-top: 14px; }
+.totals-label { margin-bottom: 2px; }
+.total-price { font-size: 1.5rem; letter-spacing: -0.01em; }
+.vat-note { font-size: 0.8rem; margin: 2px 0 0; }
+.edit-link { display: inline-block; margin-top: 12px; font-size: 0.85rem; }
+
+/* Form sections separated by hairlines, numbered micro-labels. */
+.checkout-form { min-width: 0; }
+.form-section {
+  border-top: 1px solid var(--line);
+  padding: 24px 0;
+}
+.form-section > .label { margin-bottom: 16px; }
+.field { margin-bottom: 16px; max-width: 420px; }
+.field:last-child { margin-bottom: 0; }
+.field-error { color: var(--warn); font-size: 0.85rem; margin: 6px 0 0; }
+.pickup-note { font-size: 0.85rem; margin: -8px 0 16px; }
+
+/* Payment: the one deliberately heavy border on the page. */
+.pay-panel {
+  border: 1px solid var(--ink);
+  padding: 24px 20px;
+  margin-top: 8px;
+}
+.pay-note { font-size: 0.85rem; }
+.pay-btn { width: 100%; }
+
+/* Receipt (confirmation mode) */
+.receipt-section {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+  max-width: 640px;
+}
+.receipt-section p { margin: 0 0 2px; overflow-wrap: anywhere; }
+.receipt-strong { font-weight: 700; font-size: 1.05rem; }
+.receipt-lines { list-style: none; margin: 0; padding: 0; }
+.receipt-line { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.receipt-line-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+.receipt-actions { border-top: 1px solid var(--line); padding-top: 24px; max-width: 640px; }
+
+.empty-state { border-top: 1px solid var(--line); padding-top: 24px; }
+.empty-state p { margin-bottom: 16px; }
+
+@media (min-width: 800px) {
+  .checkout-grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+  .checkout-summary { order: 2; position: sticky; top: 16px; }
+  .checkout-form { order: 1; }
+  .pay-btn { width: auto; min-width: 300px; }
+}

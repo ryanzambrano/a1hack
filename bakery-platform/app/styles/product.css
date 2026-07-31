@@ -1,0 +1,302 @@
+/* Product page, Daymaker System. Loaded after theme.css.
+   Flat surfaces, hairline borders, no box shadows, no decorative motion. */
+
+/* Author display rules must never defeat the hidden attribute. */
+[hidden] { display: none !important; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main { flex: 1; width: 100%; }
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--surface);
+  color: var(--accent-strong);
+  padding: 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-input);
+  z-index: 40;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+}
+
+/* Header: white, sticky, hairline bottom (shared across pages) */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand:hover { color: var(--accent-strong); }
+.cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.cart-badge {
+  min-width: 20px;
+  padding: 2px 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer: hairline top border (shared across pages) */
+.site-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+  padding: 16px 0 32px;
+  font-size: 0.85rem;
+}
+.site-footer p { margin: 0 0 2px; }
+
+.back-row { margin: 16px 0 14px; font-size: 0.9rem; }
+.loading { margin: 36px 0; }
+
+/* Two columns from 760px, single column below */
+.product-layout {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+@media (min-width: 760px) {
+  .product-layout {
+    grid-template-columns: 5fr 7fr;
+    align-items: start;
+  }
+}
+
+.product-media {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-img {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  border-radius: var(--radius-input);
+}
+
+.product-config { padding: 16px; }
+@media (min-width: 760px) {
+  .product-config { padding: 22px; }
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 10px;
+}
+.lead-note { font-size: 0.88rem; }
+.product-desc { margin-bottom: 20px; }
+
+/* Option groups: .label header + flat selectable rows */
+.option-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.option-legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  font-size: 0.95rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.option-row:hover { border-color: var(--line-strong); }
+.option-row.selected {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.option-radio {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+.option-text { flex: 1; min-width: 0; }
+.option-price {
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+/* Cake text */
+.cake-text-block { margin-bottom: 18px; }
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.label-row .label { margin-bottom: 6px; }
+.cake-text-price { font-size: 0.85rem; white-space: nowrap; }
+.char-counter { font-size: 0.8rem; margin: 5px 0 0; }
+
+/* Quantity stepper: flat and joined */
+.qty-block { margin-bottom: 6px; }
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-input);
+  overflow: hidden;
+}
+.step-btn {
+  width: 42px;
+  min-height: 40px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.step-btn:hover:not(:disabled) { background: var(--accent-tint); }
+.step-btn:focus-visible { outline-offset: -2px; }
+.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.qty-input {
+  width: 56px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  text-align: center;
+  padding: 8px 6px;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.qty-input:focus {
+  box-shadow: none;
+  border-color: var(--line);
+  background: var(--accent-tint);
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Live totals */
+.totals {
+  margin: 18px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.total-final { margin-top: 2px; }
+.total-label { font-weight: 600; }
+.price-lg { font-size: 1.5rem; }
+.vat-note {
+  font-size: 0.8rem;
+  text-align: right;
+  margin: 0;
+}
+
+.add-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 20px;
+  font-size: 1rem;
+}
+
+/* Feedback after adding to cart: flat panels */
+.feedback { margin-top: 14px; }
+.feedback-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.feedback-ok {
+  border-color: var(--ok-soft);
+  background: var(--ok-soft);
+}
+.feedback-title {
+  font-family: var(--font-body);
+  margin: 0 0 4px;
+}
+.feedback-ok .feedback-title { color: var(--ok); }
+.feedback-text { margin: 0; }
+.feedback-warn {
+  border-color: var(--warn-soft);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Error / not found states */
+.state-card {
+  max-width: 460px;
+  margin: 36px auto;
+  padding: 28px 20px;
+  text-align: center;
+}
+.state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}

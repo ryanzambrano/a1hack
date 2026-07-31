@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kasse | Bakeriet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/checkout.css">
+</head>
+<body>
+  <a class="skip-link" href="#innhold">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="header-bar card">
+        <a class="brand" href="./index.html">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span class="brand-name" id="brand-name">Bakeriet</span>
+        </a>
+        <a class="btn btn-primary cart-link" href="./cart.html" id="cart-link">
+          Handlekurv
+          <span class="cart-badge" id="cart-badge" hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="innhold" class="container">
+    <div id="status" class="card status-card" aria-live="polite">Laster siden...</div>
+
+    <div id="checkout-view" hidden>
+      <h1 class="page-title">Kasse</h1>
+
+      <div class="checkout-layout">
+        <section class="card panel summary-card" aria-labelledby="summary-title">
+          <h2 id="summary-title">Bestillingen din</h2>
+          <div id="summary-lines"></div>
+          <div class="total-row">
+            <span class="total-label">Totalt</span>
+            <span class="price total-price" id="summary-total"></span>
+          </div>
+          <p class="vat-note muted">inkl. mva</p>
+          <a class="edit-link" href="./cart.html">Endre handlekurven</a>
+        </section>
+
+        <form id="checkout-form" class="checkout-main" novalidate>
+          <section class="card panel" aria-labelledby="contact-title">
+            <h2 id="contact-title">Kontaktinfo</h2>
+            <div class="field">
+              <label for="name">Navn</label>
+              <input id="name" name="name" type="text" autocomplete="name" required aria-describedby="name-error">
+              <p class="field-error" id="name-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="phone">Telefon</label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required aria-describedby="phone-error">
+              <p class="field-error" id="phone-error" hidden></p>
+            </div>
+            <div class="field field-last">
+              <label for="email">E-post</label>
+              <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-error">
+              <p class="field-error" id="email-error" hidden></p>
+            </div>
+          </section>
+
+          <section class="card panel" aria-labelledby="pickup-title">
+            <h2 id="pickup-title">Henting</h2>
+            <div id="pickup-status" class="pickup-status muted" hidden></div>
+            <div class="field">
+              <label for="pickup-date">Hentedag</label>
+              <input id="pickup-date" name="pickupDate" type="date" required disabled aria-describedby="date-hint pickup-date-error">
+              <p class="field-hint muted" id="date-hint"></p>
+              <p class="field-error" id="pickup-date-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="pickup-slot">Hentetidspunkt</label>
+              <select id="pickup-slot" name="pickupSlot" required disabled aria-describedby="pickup-slot-error">
+                <option value="">Velg tidspunkt</option>
+              </select>
+              <p class="field-error" id="pickup-slot-error" hidden></p>
+            </div>
+            <div class="field field-last">
+              <label for="note">Kommentar til bakeriet (valgfritt)</label>
+              <textarea id="note" name="note" rows="3" maxlength="500" placeholder="F.eks. allergier eller andre ønsker"></textarea>
+            </div>
+          </section>
+
+          <section class="card panel pay-panel" aria-labelledby="pay-title">
+            <div class="pay-head">
+              <h2 id="pay-title">Betaling (demo)</h2>
+              <span class="badge pay-badge">Demo</span>
+            </div>
+            <p class="pay-note">Dette er en demobutikk, så ingen ekte betaling blir gjennomført.</p>
+            <p id="order-error" class="order-error" role="alert" hidden></p>
+            <button type="submit" class="btn btn-primary pay-btn" id="pay-btn" disabled>Betal (demo)</button>
+          </section>
+        </form>
+      </div>
+    </div>
+
+    <div id="confirmation-view" hidden></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-card card" id="footer-card" hidden></div>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/checkout.js"></script>
+</body>
+</html>

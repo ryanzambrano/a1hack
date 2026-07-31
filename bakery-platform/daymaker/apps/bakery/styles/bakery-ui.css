@@ -1,0 +1,1889 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   BAKERY UI COMPONENTS  —  the quiet register
+
+   Loaded AFTER bakery.css / onboarding.css / orders.css so it wins on the
+   components it replaces. Everything is scoped to body.bakery-scope, which
+   is also what beats /styles/responsive.css.
+
+   Paired with apps/bakery/scripts/bakery-ui.js, which owns the status
+   vocabulary these classes render.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   TOP BAR — one line, identical on every bakery page.
+
+   Replaces three different page-header patterns (the dashboard's
+   four-line hero, the assignment page's `.site-nav` + eyebrow + Caveat
+   subtitle, and settings' inline-styled block).
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .bk-top {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+  flex-wrap: wrap;
+  padding: var(--dm-3) var(--page-gutter);
+  border-bottom: var(--dm-rule);
+  background: var(--dm-surface);
+}
+
+body.bakery-scope .bk-top__mark {
+  display: inline-flex;
+  align-items: center;
+}
+body.bakery-scope .bk-top__mark img { height: 22px; width: auto; display: block; }
+
+body.bakery-scope .bk-top__sep {
+  width: 1px;
+  height: 18px;
+  background: var(--dm-g300);
+  flex: none;
+}
+
+body.bakery-scope .bk-top__where {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--dm-g800);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.bakery-scope .bk-top__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+}
+
+/* Weight 500 in --dm-g800 next to the Clerk avatar read as a caption, not a
+   way out: people looked at the top bar and did not see "Settings" at all.
+   Full ink and bold, so it carries like the label it is. */
+body.bakery-scope .bk-top__link {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--dm-g1000);
+  text-decoration: none;
+  padding: 6px 2px;
+}
+body.bakery-scope .bk-top__link:hover { color: var(--dm-accent-deep); }
+
+/* The pending count, as an actual component. It used to be
+   #nav-pending-badge: shipped `hidden` with a comment promising it stayed
+   invisible, then un-hidden by updateNavBadge() with no class at all, so
+   it rendered as a bare 17px numeral in the corner. */
+body.bakery-scope .count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--dm-accent-deep);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+body.bakery-scope .count-badge[hidden] { display: none; }
+
+/* ─────────────────────────────────────────────────────────────
+   SHELL + PAGE HEAD
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .bk-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--dm-6) var(--page-gutter) var(--dm-7);
+}
+body.bakery-scope .bk-shell--narrow { max-width: 760px; }
+body.bakery-scope .bk-shell--wide { max-width: 1180px; }
+
+body.bakery-scope .bk-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dm-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--dm-5);
+}
+body.bakery-scope .bk-head__h {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0 0 3px;
+  color: var(--dm-g1000);
+}
+body.bakery-scope .bk-head__sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dm-g800);
+}
+/* Order ref and delivery line ran together as one string
+   ("#8f3c1a20 Deliver Thursday, July 30"). Separate them, but only when
+   there is actually a second part. */
+body.bakery-scope .bk-head__sub .bk-ref + .bk-head__subtext:not(:empty)::before {
+  content: "·";
+  margin: 0 7px;
+  color: var(--dm-g500);
+}
+body.bakery-scope .bk-head__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--dm-2);
+  flex-wrap: wrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   THE CHIP — one component, six tones, no tilt.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--dm-r-sm);
+  border: 1px solid transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  transform: none;
+}
+body.bakery-scope .chip--neutral { background: var(--dm-neutral-bg); color: var(--dm-neutral-fg); }
+body.bakery-scope .chip--info    { background: var(--dm-info-bg);    color: var(--dm-info-fg); }
+body.bakery-scope .chip--warn    { background: var(--dm-warn-bg);    color: var(--dm-warn-fg); }
+body.bakery-scope .chip--good    { background: var(--dm-good-bg);    color: var(--dm-good-fg); }
+body.bakery-scope .chip--bad     { background: var(--dm-bad-bg);     color: var(--dm-bad-fg); }
+/* The only red chip: "we need something from you now". */
+body.bakery-scope .chip--action  { background: var(--dm-accent-deep); color: #fff; }
+
+body.bakery-scope .chip--outline {
+  background: transparent;
+  border-color: var(--dm-g300);
+  color: var(--dm-g800);
+  font-weight: 500;
+}
+body.bakery-scope .chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  flex: none;
+}
+
+/* ── Compatibility layer: legacy `.status-pill` / `.source-badge` markup ──
+   Both classes were declared twice with different specs (bakery.css AND
+   orders.css) and both painted `in_production` in full brand red while
+   `failed` was a pale pink — the alarm colour on the healthiest state.
+
+   Rather than chase every renderer at once, the legacy classes are
+   re-pointed at the same ramp `.chip` uses, keyed off the `data-status`
+   they already carry. Renderers that have moved to `chip()` emit `.chip`;
+   ones that haven't still land on the correct tone.
+
+   Scoped to the badge elements themselves, never bare `[data-status]` —
+   card containers carry that attribute too, and an unscoped rule tints
+   the whole card and its title. (Learned the hard way on /admin.) */
+body.bakery-scope :is(.status-pill, .source-badge, .apply-badge,
+                      .needs-eta-badge, .package-card__badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--dm-r-sm);
+  border: 1px solid transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  transform: none;
+  box-shadow: none;
+  background: var(--dm-neutral-bg);
+  color: var(--dm-neutral-fg);
+}
+
+/* nothing started yet */
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="pending"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="pending_manual"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="scheduled"] {
+  background: var(--dm-neutral-bg);
+  color: var(--dm-neutral-fg);
+}
+/* the bakery is the blocker */
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="pending_bakery"] {
+  background: var(--dm-warn-bg);
+  color: var(--dm-warn-fg);
+}
+/* acknowledged and moving — this is the inverted-severity fix */
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="accepted"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="confirmed"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="in_production"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="baking"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="in_transit"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="out_for_delivery"] {
+  background: var(--dm-info-bg);
+  color: var(--dm-info-fg);
+}
+/* terminal good */
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="ready"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="ready_for_pickup"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="delivered"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="active"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="complete"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="completed"] {
+  background: var(--dm-good-bg);
+  color: var(--dm-good-fg);
+}
+/* terminal bad */
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="failed"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="delivery_failed"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="cancelled"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="canceled"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="refunded"],
+body.bakery-scope :is(.status-pill, .source-badge)[data-status="unsuccessful"] {
+  background: var(--dm-bad-bg);
+  color: var(--dm-bad-fg);
+}
+
+/* Source is context, not status — it must not compete with the status chip
+   beside it. Both washes (#FFE6F1 campaign, #E0F4FF vc) become one outline. */
+body.bakery-scope .source-badge:not([data-status]) {
+  background: transparent;
+  border-color: var(--dm-g300);
+  color: var(--dm-g800);
+  font-weight: 500;
+}
+
+/* "Needs you" badges are the one red fill, at AA-safe depth. */
+body.bakery-scope :is(.needs-eta-badge, .order-card__unread, .apply-badge) {
+  background: var(--dm-accent-deep);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTONS
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .bk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 9px 15px;
+  min-height: 36px;
+  border-radius: var(--dm-r-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  transform: none;
+  box-shadow: none;
+}
+body.bakery-scope .bk-btn--primary { background: var(--dm-accent-deep); color: #fff; }
+body.bakery-scope .bk-btn--primary:hover:not(:disabled) { background: var(--dm-accent-press); }
+body.bakery-scope .bk-btn--secondary {
+  background: var(--dm-surface);
+  border-color: var(--dm-g300);
+  color: var(--dm-g1000);
+}
+body.bakery-scope .bk-btn--secondary:hover:not(:disabled) { background: var(--dm-surface-2); }
+body.bakery-scope .bk-btn--ghost { background: transparent; color: var(--dm-g800); }
+body.bakery-scope .bk-btn--ghost:hover:not(:disabled) {
+  background: var(--dm-surface-2);
+  color: var(--dm-g1000);
+}
+body.bakery-scope .bk-btn--danger {
+  background: var(--dm-surface);
+  border-color: var(--dm-g300);
+  color: var(--dm-bad-fg);
+}
+body.bakery-scope .bk-btn--danger:hover:not(:disabled) { background: var(--dm-bad-bg); }
+/* Big enough for a floured thumb. */
+body.bakery-scope .bk-btn--lg { min-height: 44px; padding: 12px 20px; font-size: 15px; }
+body.bakery-scope .bk-btn--block { width: 100%; }
+/* A disabled primary used to drop to opacity .35 and vanish into the page.
+   Keep it legible and let the adjacent hint say why it's off. */
+body.bakery-scope .bk-btn:disabled {
+  background: var(--dm-g200);
+  border-color: var(--dm-g200);
+  color: var(--dm-g700);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   KPI ROW
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--dm-3);
+  margin-bottom: var(--dm-5);
+}
+/* The queue's own row is two-up (work on hand, month to invoice). The VC
+   section below it still runs three across, so this is a modifier rather
+   than a change to .kpis. */
+body.bakery-scope .kpis--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  body.bakery-scope .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.bakery-scope .kpi--wide { grid-column: 1 / -1; }
+}
+body.bakery-scope .kpi {
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  background: var(--dm-surface);
+  padding: var(--dm-4);
+  min-width: 0;
+}
+/* The lead KPI earns a darker hairline, not a red fill. The red card used
+   rgba(255,255,255,.92) on #FF2D2D for its label — 3.30:1, illegible. */
+body.bakery-scope .kpi--lead { border-color: var(--dm-g500); }
+/* The money KPI is a link now (to the statement), so strip link chrome and
+   keep it reading as a card. */
+body.bakery-scope a.kpi { text-decoration: none; color: inherit; display: block; }
+body.bakery-scope a.kpi:hover { border-color: var(--dm-g500); }
+/* Set only while a statement is waiting on the bakery's approval — the one
+   state on this page where the money needs them to do something. */
+body.bakery-scope .kpi--action { border-color: var(--dm-accent-deep); }
+body.bakery-scope .kpi__l {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dm-g800);
+  margin-bottom: 6px;
+}
+body.bakery-scope .kpi__v {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--dm-g1000);
+}
+body.bakery-scope .kpi__s {
+  font-size: 12px;
+  color: var(--dm-g700);
+  margin-top: 3px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   QUEUE TOOLBAR
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .qbar {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--dm-3);
+}
+body.bakery-scope .segs {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--dm-g100);
+  border-radius: var(--dm-r-sm);
+}
+body.bakery-scope .seg {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dm-g800);
+  padding: 7px 12px;
+  min-height: 32px;
+  border-radius: 4px;
+  transform: none;
+  box-shadow: none;
+}
+body.bakery-scope .seg[aria-selected="true"],
+body.bakery-scope .seg.is-active {
+  background: var(--dm-surface);
+  color: var(--dm-g1000);
+  font-weight: 600;
+  box-shadow: var(--dm-sh-sm);
+}
+body.bakery-scope .seg__n { opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+body.bakery-scope .bk-search {
+  flex: 1 1 200px;
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface);
+  padding: 0 11px;
+  min-height: 36px;
+}
+body.bakery-scope .bk-search:focus-within {
+  box-shadow: var(--dm-focus);
+  border-color: var(--dm-accent);
+}
+/* A real icon. The old one was a 🔍 emoji in a CSS ::before, so it
+   rendered as the platform's colour emoji at whatever size it liked. */
+body.bakery-scope .bk-search__icon { flex: none; color: var(--dm-g700); display: block; }
+body.bakery-scope .bk-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13.5px;
+  color: var(--dm-g1000);
+  padding: 9px 0;
+}
+body.bakery-scope .bk-search input::placeholder { color: var(--dm-g700); }
+body.bakery-scope .bk-search input::-webkit-search-cancel-button { display: none; }
+
+/* Poll status. The old "live" chip pulsed at a fixed 1.6s while polling
+   backed off to 60s and stopped entirely on tab hide — it asserted
+   something untrue. This just states when the data is from. */
+body.bakery-scope .qbar__sync {
+  font-size: 12px;
+  color: var(--dm-g700);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DAY DIVIDER
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .daybar {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+  margin: var(--dm-5) 0 var(--dm-2);
+}
+body.bakery-scope .daybar:first-child { margin-top: 0; }
+body.bakery-scope .daybar__t {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dm-g800);
+}
+body.bakery-scope .daybar__n {
+  font-size: 12px;
+  color: var(--dm-g700);
+  font-variant-numeric: tabular-nums;
+}
+body.bakery-scope .daybar__r { flex: 1; height: 1px; background: var(--dm-g200); }
+
+/* ─────────────────────────────────────────────────────────────
+   THE QUEUE ROW — phone layout is the real layout.
+
+   The old `.order-card` was `grid-template-columns: auto 1fr auto` with no
+   phone override. At 390px the computed tracks were `87.19px 0px
+   128.81px`: both `auto` tracks sized against max-content first, leaving
+   `1fr` with nothing, so the body track — recipient, address, product and
+   every chip — resolved to ZERO and overflowed into its neighbour. The
+   payout printed straight through the status pill.
+   /styles/responsive.css had no `.order-card` rule to rescue it.
+
+   Fixes: explicit minmax tracks so no track can be crushed, named areas
+   so the phone stacks deliberately, ellipsis on every line that can run
+   long, and a CONTAINER query rather than a viewport media query — the
+   row responds to the space it actually has, so it survives being dropped
+   into a narrower column later.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .queue-list {
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  overflow: hidden;
+  background: var(--dm-surface);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  container-type: inline-size;
+  container-name: queue;
+}
+
+body.bakery-scope .queue-row {
+  display: grid;
+  gap: var(--dm-1) var(--dm-4);
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "who   money"
+    "what  when"
+    "tags  tags";
+  padding: var(--dm-4);
+  border-bottom: var(--dm-rule);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  transform: none;
+  box-shadow: none;
+}
+body.bakery-scope .queue-row:last-child { border-bottom: 0; }
+body.bakery-scope .queue-row:hover { background: var(--dm-surface-2); }
+/* "Needs you" gets an inset edge, not a red border + red drop shadow. */
+body.bakery-scope .queue-row--needs { box-shadow: inset 3px 0 0 var(--dm-accent-deep); }
+
+@container queue (min-width: 660px) {
+  body.bakery-scope .queue-row {
+    grid-template-columns:
+      minmax(160px, 1.5fr) minmax(120px, 1fr)
+      minmax(96px, auto) minmax(80px, auto);
+    grid-template-areas:
+      "who what tags when"
+      "who what tags money";
+    align-items: center;
+  }
+  body.bakery-scope .queue-row__when,
+  body.bakery-scope .queue-row__money { text-align: right; }
+  body.bakery-scope .queue-row__tags { justify-content: flex-end; }
+  body.bakery-scope .queue-row__name,
+  body.bakery-scope .queue-row__sub { display: inline; }
+}
+
+body.bakery-scope .queue-row__who   { grid-area: who; min-width: 0; }
+body.bakery-scope .queue-row__what  { grid-area: what; min-width: 0; }
+body.bakery-scope .queue-row__tags  {
+  grid-area: tags;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+body.bakery-scope .queue-row__when  { grid-area: when; }
+body.bakery-scope .queue-row__money { grid-area: money; white-space: nowrap; }
+
+body.bakery-scope .queue-row__name {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.bakery-scope .queue-row__sub,
+body.bakery-scope .queue-row__what-l {
+  display: block;
+  font-size: 12.5px;
+  color: var(--dm-g800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.bakery-scope .queue-row__what-l { font-size: 13px; }
+body.bakery-scope .queue-row__when-v {
+  font-size: 12.5px;
+  color: var(--dm-g800);
+  font-variant-numeric: tabular-nums;
+}
+body.bakery-scope .queue-row__amt {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+body.bakery-scope .queue-row__amt-l {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--dm-g700);
+}
+/* The order reference: a quiet monospace token, not an ink-filled tilted
+   chip. JetBrains Mono is only loaded on 2 of 7 pages, so this asks for
+   the system mono stack that is available everywhere. */
+body.bakery-scope .queue-row__ref,
+body.bakery-scope .bk-ref {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dm-g700);
+  letter-spacing: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  transform: none;
+}
+
+/* Empty state with an actual sentence in it. */
+body.bakery-scope .queue-empty {
+  border: 1px dashed var(--dm-g300);
+  border-radius: var(--dm-r);
+  background: var(--dm-surface-2);
+  padding: var(--dm-7) var(--dm-5);
+  text-align: center;
+}
+body.bakery-scope .queue-empty__t {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dm-g1000);
+  margin: 0 0 4px;
+}
+body.bakery-scope .queue-empty__s {
+  font-size: 13.5px;
+  color: var(--dm-g800);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   NOTICE — one treatment, replacing the flavour note, the bulk-pricing
+   call-out and the profile nudge card.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .bk-note {
+  display: flex;
+  gap: var(--dm-3);
+  align-items: flex-start;
+  padding: var(--dm-3) var(--dm-4);
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface-2);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dm-g800);
+  margin: 0 0 var(--dm-4);
+  box-shadow: none;
+  border-left-width: 1px;
+}
+body.bakery-scope .bk-note--warn {
+  background: var(--dm-warn-bg);
+  border-color: transparent;
+  color: var(--dm-warn-fg);
+}
+body.bakery-scope .bk-note--bad {
+  background: var(--dm-bad-bg);
+  border-color: transparent;
+  color: var(--dm-bad-fg);
+}
+body.bakery-scope .bk-note b,
+body.bakery-scope .bk-note strong {
+  color: inherit;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: inline;
+  font-size: inherit;
+  margin: 0;
+}
+body.bakery-scope .bk-note__x {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  flex: none;
+}
+body.bakery-scope .bk-note__x:hover { opacity: 1; background: rgba(0, 0, 0, 0.05); }
+
+/* ─────────────────────────────────────────────────────────────
+   FORMS
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .fset {
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  background: var(--dm-surface);
+  margin-bottom: var(--dm-4);
+  box-shadow: none;
+}
+body.bakery-scope .fset__h {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dm-2);
+  flex-wrap: wrap;
+  padding: var(--dm-4) var(--dm-5) 0;
+}
+body.bakery-scope .fset__t {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--dm-g1000);
+  text-transform: none;
+}
+body.bakery-scope .fset__opt { font-size: 12px; color: var(--dm-g700); }
+body.bakery-scope .fset__d {
+  margin: 4px var(--dm-5) 0;
+  font-size: 13px;
+  color: var(--dm-g800);
+}
+body.bakery-scope .fset__b { padding: var(--dm-4) var(--dm-5) var(--dm-5); }
+
+body.bakery-scope .bk-grid { display: grid; gap: var(--dm-4); }
+/* Street needs room; a postcode does not. The old `.row` was a flat
+   `1fr 1fr`, which clipped "Thorvald Meyers gate 44" while the postal
+   field sat four-fifths empty. */
+body.bakery-scope .bk-grid--addr { grid-template-columns: 2.2fr 1fr; }
+body.bakery-scope .bk-grid--half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 620px) {
+  body.bakery-scope .bk-grid--addr,
+  body.bakery-scope .bk-grid--half { grid-template-columns: minmax(0, 1fr); }
+}
+
+body.bakery-scope .bk-f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+body.bakery-scope .bk-f__l {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dm-g1000);
+}
+body.bakery-scope .bk-f__h { font-size: 12px; color: var(--dm-g800); }
+
+body.bakery-scope .bk-in {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14.5px;
+  padding: 10px 12px;
+  min-height: 40px;
+  width: 100%;
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface);
+  color: var(--dm-g1000);
+  box-shadow: none;
+  transition: border-color 120ms ease;
+}
+body.bakery-scope .bk-in::placeholder { color: var(--dm-g700); }
+body.bakery-scope .bk-in:focus-visible { border-color: var(--dm-accent); }
+/* Read-only values must not look like fields you should fill in. The old
+   "Customer pays" preview had the same border, radius and weight as the
+   editable rate box beside it. */
+body.bakery-scope .bk-in--ro {
+  background: var(--dm-g100);
+  color: var(--dm-g800);
+  border-style: dashed;
+}
+body.bakery-scope .bk-in--num { text-align: right; font-variant-numeric: tabular-nums; }
+body.bakery-scope textarea.bk-in { min-height: 88px; resize: vertical; line-height: 1.5; }
+
+/* input + unit, as one control */
+body.bakery-scope .bk-unit {
+  display: flex;
+  align-items: stretch;
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  overflow: hidden;
+  background: var(--dm-surface);
+}
+body.bakery-scope .bk-unit:focus-within { border-color: var(--dm-accent); box-shadow: var(--dm-focus); }
+body.bakery-scope .bk-unit .bk-in { border: 0; border-radius: 0; box-shadow: none; }
+body.bakery-scope .bk-unit .bk-in:focus-visible { box-shadow: none; }
+body.bakery-scope .bk-unit__s {
+  display: grid;
+  place-items: center;
+  padding: 0 11px;
+  background: var(--dm-g100);
+  border-left: var(--dm-rule);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--dm-g800);
+  white-space: nowrap;
+}
+body.bakery-scope .bk-unit__s--pre { border-left: 0; border-right: var(--dm-rule); }
+
+/* checkbox / radio option row. accent-color so native controls stop
+   rendering in Chrome blue inside a red-accented product. */
+body.bakery-scope .bk-opt {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: var(--dm-3);
+  align-items: start;
+  padding: var(--dm-3) var(--dm-4);
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  cursor: pointer;
+  background: var(--dm-surface);
+}
+body.bakery-scope .bk-opt--sel {
+  border-color: var(--dm-g1000);
+  background: var(--dm-surface-2);
+}
+body.bakery-scope .bk-opt input[type="checkbox"],
+body.bakery-scope .bk-opt input[type="radio"] {
+  accent-color: var(--dm-accent-deep);
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  flex: none;
+}
+body.bakery-scope .bk-opt__t { font-size: 13.5px; font-weight: 500; display: block; }
+body.bakery-scope .bk-opt__h {
+  font-size: 12.5px;
+  color: var(--dm-g800);
+  margin-top: 2px;
+  display: block;
+}
+body.bakery-scope .bk-opt__f {
+  margin-top: var(--dm-3);
+  display: flex;
+  align-items: center;
+  gap: var(--dm-2);
+  flex-wrap: wrap;
+}
+body.bakery-scope .bk-stack { display: flex; flex-direction: column; gap: var(--dm-2); }
+
+/* ─────────────────────────────────────────────────────────────
+   DAY PICKER — 7 equal columns that cannot wrap.
+   The old chips were pills that wrapped after six, orphaning "Sun", and
+   each pressed chip carried `transform: rotate(-1deg)` plus a red hard
+   shadow.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .open-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+body.bakery-scope .open-day-chip {
+  appearance: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 2px;
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface);
+  color: var(--dm-g800);
+  cursor: pointer;
+  transform: none;
+  box-shadow: none;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+body.bakery-scope .open-day-chip:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--dm-g500);
+}
+body.bakery-scope .open-day-chip[aria-pressed="true"] {
+  background: var(--dm-g1000);
+  border-color: var(--dm-g1000);
+  color: #fff;
+  font-weight: 600;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STEPPER — 3 steps, state in the mark not in decoration.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .wizard__steps {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-2);
+  margin: 0 0 var(--dm-5);
+  padding: 0;
+  list-style: none;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+body.bakery-scope .wizard__step {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dm-g700);
+}
+body.bakery-scope .wizard__step .num {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: var(--dm-border);
+  background: var(--dm-surface);
+  color: var(--dm-g800);
+  box-shadow: none;
+}
+body.bakery-scope .wizard__step.is-active { color: var(--dm-g1000); font-weight: 600; }
+body.bakery-scope .wizard__step.is-active .num {
+  background: var(--dm-g1000);
+  border-color: var(--dm-g1000);
+  color: #fff;
+  box-shadow: none;
+}
+body.bakery-scope .wizard__step.is-done .num {
+  background: var(--dm-good-bg);
+  border-color: var(--dm-good-bg);
+  color: var(--dm-good-fg);
+}
+body.bakery-scope .wizard__divider {
+  width: 22px;
+  height: 1px;
+  background: var(--dm-g300);
+  opacity: 1;
+}
+/* On a phone the labels stay — three of them fit. The old rule set
+   `font-size: 0` to hide them, leaving bare numbered circles. */
+@media (max-width: 600px) {
+  body.bakery-scope .wizard__steps { gap: 6px; }
+  body.bakery-scope .wizard__step { font-size: 12px; gap: 5px; }
+  body.bakery-scope .wizard__divider { width: 12px; }
+}
+
+body.bakery-scope .wizard {
+  max-width: 760px;
+  margin: 0 auto;
+}
+body.bakery-scope .wizard--wide { max-width: 1040px; }
+body.bakery-scope .wizard__header { text-align: left; margin-bottom: var(--dm-5); }
+/* The eyebrow said "Step 2 of 4" in 24px Caveat directly under a stepper
+   that already said it, above a title that said it a third time. */
+body.bakery-scope .wizard__eyebrow { display: none; }
+body.bakery-scope .wizard__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
+}
+body.bakery-scope .wizard__subtitle {
+  color: var(--dm-g800);
+  font-size: 13.5px;
+  max-width: 62ch;
+  margin: 0;
+}
+/* The panel was a 6px-hard-shadow card wrapping one text input. Sections
+   inside it now carry the structure, so the panel itself is just a group. */
+body.bakery-scope .wizard__panel {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+body.bakery-scope .wizard__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--dm-2);
+  margin-top: var(--dm-4);
+  flex-wrap: wrap;
+}
+body.bakery-scope .wizard__footer .btn-ghost,
+body.bakery-scope .wizard__footer .bk-btn--ghost { margin-right: auto; }
+
+/* ─────────────────────────────────────────────────────────────
+   STICKY SAVE BAR — settings used to bury "Save changes" ~1,900px below
+   the fold, so you never saw it while editing.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+  flex-wrap: wrap;
+  padding: var(--dm-3) var(--page-gutter);
+  border-top: var(--dm-border);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding-bottom: max(var(--dm-3), env(safe-area-inset-bottom));
+}
+body.bakery-scope .savebar__s { font-size: 13px; color: var(--dm-g800); }
+body.bakery-scope .savebar__r { margin-left: auto; display: flex; gap: var(--dm-2); }
+
+/* ─────────────────────────────────────────────────────────────
+   SUMMARY ROWS + TIMELINE (done screen, order summary)
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .bk-sum {
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  overflow: hidden;
+  background: var(--dm-surface);
+}
+body.bakery-scope .bk-sum__r {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--dm-4);
+  padding: 10px var(--dm-4);
+  border-bottom: var(--dm-rule);
+  font-size: 13.5px;
+}
+body.bakery-scope .bk-sum__r:last-child { border-bottom: 0; }
+body.bakery-scope .bk-sum__l { color: var(--dm-g800); }
+body.bakery-scope .bk-sum__v {
+  font-weight: 500;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+body.bakery-scope .bk-sum__v--empty { color: var(--dm-g700); font-weight: 400; }
+
+body.bakery-scope .bk-tl { list-style: none; margin: 0; padding: 0; }
+body.bakery-scope .bk-tl li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: var(--dm-3);
+  padding-bottom: var(--dm-4);
+  position: relative;
+}
+body.bakery-scope .bk-tl li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  bottom: 0;
+  width: 1px;
+  background: var(--dm-g300);
+}
+body.bakery-scope .bk-tl__d {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  margin-top: 2px;
+  border: var(--dm-border);
+  background: var(--dm-surface);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--dm-g700);
+  z-index: 1;
+}
+body.bakery-scope .bk-tl__d--done {
+  background: var(--dm-good-bg);
+  border-color: var(--dm-good-bg);
+  color: var(--dm-good-fg);
+}
+body.bakery-scope .bk-tl__d--now {
+  background: var(--dm-g1000);
+  border-color: var(--dm-g1000);
+  color: #fff;
+}
+body.bakery-scope .bk-tl__t { font-size: 13.5px; font-weight: 600; display: block; }
+body.bakery-scope .bk-tl__s { font-size: 12.5px; color: var(--dm-g800); display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LEGACY COMPONENT OVERRIDES
+
+   The classes below still exist in bakery.css / onboarding.css /
+   orders.css and are still emitted by renderers this pass didn't rewrite.
+   The mechanical sweep already removed their tilts, hard shadows and
+   brand faces; these rules finish the job on structure and weight so a
+   half-migrated page never looks half-migrated.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Buttons from main.css ── */
+body.bakery-scope :is(.btn, .btn-primary, .btn-secondary, .btn-action,
+                      .btn-ghost, .btn-invoice) {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 15px;
+  min-height: 36px;
+  border-radius: var(--dm-r-sm);
+  border: 1px solid transparent;
+  box-shadow: none;
+  transform: none;
+  letter-spacing: 0;
+}
+body.bakery-scope :is(.btn-primary, .btn-action, .btn-invoice) {
+  background: var(--dm-accent-deep);
+  border-color: transparent;
+  color: #fff;
+}
+body.bakery-scope :is(.btn-primary, .btn-action, .btn-invoice):hover:not(:disabled) {
+  background: var(--dm-accent-press);
+  transform: none;
+  box-shadow: none;
+  color: #fff;
+}
+body.bakery-scope :is(.btn-secondary, .btn.btn-secondary) {
+  background: var(--dm-surface);
+  border-color: var(--dm-g300);
+  color: var(--dm-g1000);
+}
+body.bakery-scope .btn-ghost { background: transparent; border-color: transparent; color: var(--dm-g800); }
+body.bakery-scope .btn-danger {
+  background: var(--dm-surface);
+  border-color: var(--dm-g300);
+  color: var(--dm-bad-fg);
+}
+body.bakery-scope .btn:disabled,
+body.bakery-scope .btn-action:disabled {
+  background: var(--dm-g200);
+  border-color: var(--dm-g200);
+  color: var(--dm-g700);
+  opacity: 1;
+}
+/* /styles/responsive.css forces `.btn-primary { width: 100% }` on phones,
+   which turns a toolbar into a stack of full-width slabs. The scope
+   qualifier is what lets us opt out. */
+@media (max-width: 640px) {
+  body.bakery-scope :is(.btn, .btn-primary, .btn-secondary):not(.bk-btn--block) {
+    width: auto;
+  }
+}
+
+/* ── Inputs from main.css: focus was a 3px offset shadow, i.e. the same
+   decoration as a resting card. Make it a ring. ── */
+body.bakery-scope :is(.input, .select, .textarea, .dd-input) {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14.5px;
+  padding: 10px 12px;
+  min-height: 40px;
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface);
+  box-shadow: none;
+}
+body.bakery-scope :is(.input, .select, .textarea, .dd-input):focus {
+  box-shadow: var(--dm-focus);
+  border-color: var(--dm-accent);
+}
+
+/* ── Cards ── */
+body.bakery-scope :is(.card, .stat-card, .bakery-card, .settings-card,
+                      .orders-card, .detail-section, .zone-item,
+                      .package-card, .modal-card) {
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+}
+body.bakery-scope :is(.stat-card, .order-card):hover { transform: none; }
+
+/* Section headings: orders.css set every one of them in lowercase
+   Fraunces ("order summary", "cakes & designs", "we hit a snag"), which
+   is a second heading convention on the same surface. */
+body.bakery-scope :is(.orders-card__h, .settings-card__h, .detail-section h3,
+                      .bakery-vc-queue__h, .profile-extras__title) {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--dm-g1000);
+  text-transform: none;
+  margin: 0 0 var(--dm-3);
+}
+body.bakery-scope :is(.orders-card__hint, .action-card__hint,
+                      .upload-card__hint, .cakes-toolbar__hint) {
+  font-size: 13px;
+  color: var(--dm-g800);
+}
+
+/* Hero: four stacked lines become one. The Caveat eyebrow, the permanent
+   "checking on your queue…" line and the orphaned Caveat action hint are
+   all gone; the top bar carries the name and status now. */
+body.bakery-scope :is(.bakery-hero__eyebrow, .bakery-hero__sub--caveat,
+                      .bakery-hero__actions-hint, .bakery-vc-queue__sub,
+                      .orders-foot__caveat, .done-card__icon,
+                      .order-empty__icon, .eyebrow) {
+  display: none;
+}
+body.bakery-scope .bakery-hero__name,
+body.bakery-scope .bakery-order-hero__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0 0 3px;
+}
+body.bakery-scope .bakery-hero__meta { font-size: 13.5px; color: var(--dm-g800); }
+body.bakery-scope .bakery-hero__status {
+  border: 1px solid transparent;
+  background: var(--dm-good-bg);
+  color: var(--dm-good-fg);
+  border-radius: var(--dm-r-sm);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+}
+body.bakery-scope .bakery-hero__status .dot,
+body.bakery-scope .queue-poll .dot {
+  animation: none;
+  box-shadow: none;
+  background: currentColor;
+  opacity: 0.85;
+  width: 6px;
+  height: 6px;
+}
+
+/* Filter chips -> segmented control */
+body.bakery-scope .filter-chips {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--dm-g100);
+  border-radius: var(--dm-r-sm);
+  gap: 0;
+  flex-wrap: nowrap;
+}
+body.bakery-scope .filter-chip {
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  padding: 7px 12px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dm-g800);
+  transform: none;
+  box-shadow: none;
+  letter-spacing: 0;
+}
+body.bakery-scope .filter-chip:hover { transform: none; box-shadow: none; }
+body.bakery-scope .filter-chip.is-active {
+  background: var(--dm-surface);
+  color: var(--dm-g1000);
+  font-weight: 600;
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+}
+
+/* Search: the 🔍 emoji ::before is neutralised by the sweep; give the
+   wrapper a square field and a real ring. */
+body.bakery-scope .queue-search {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  padding: 0 11px;
+  min-height: 36px;
+  background: var(--dm-surface);
+}
+body.bakery-scope .queue-search:focus-within {
+  border-color: var(--dm-accent);
+  box-shadow: var(--dm-focus);
+}
+body.bakery-scope .queue-search::before { content: none; }
+body.bakery-scope .queue-search__input { font-size: 13.5px; padding: 9px 0; }
+body.bakery-scope .queue-poll {
+  background: transparent;
+  border: 0;
+  color: var(--dm-g700);
+  font-size: 12px;
+  padding: 0;
+}
+
+/* Zone editor + simple mode: the panel-in-a-panel-in-a-panel nesting
+   flattens to one hairline group. */
+body.bakery-scope :is(.zone-simple, .zone-howto, .zone-toolbar) {
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  box-shadow: none;
+}
+body.bakery-scope .zone-simple__choice {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  box-shadow: none;
+}
+body.bakery-scope .zone-simple__choice:has(input:checked) {
+  border-color: var(--dm-g1000);
+  background: var(--dm-surface-2);
+  box-shadow: none;
+}
+body.bakery-scope .zone-simple__choice input[type="radio"] {
+  accent-color: var(--dm-accent-deep);
+  width: 17px;
+  height: 17px;
+}
+body.bakery-scope .zone-map-wrap {
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+}
+body.bakery-scope .zone-map-btn--save {
+  background: var(--dm-accent-deep);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: var(--dm-sh-md);
+  font-weight: 600;
+}
+body.bakery-scope .zone-item__name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: var(--dm-rule);
+}
+body.bakery-scope .zone-empty {
+  border: 1px dashed var(--dm-g300);
+  border-radius: var(--dm-r);
+  background: var(--dm-surface-2);
+  color: var(--dm-g800);
+}
+
+/* Price editor: read-only "Customer pays" must not read as an input. */
+body.bakery-scope .cake-prices__row {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  box-shadow: none;
+}
+body.bakery-scope .cake-prices__row--default { box-shadow: none; border-color: var(--dm-g500); }
+body.bakery-scope .cake-prices__row input,
+body.bakery-scope .cake-prices__customer {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface);
+  min-height: 38px;
+}
+body.bakery-scope .cake-prices__customer {
+  background: var(--dm-g100);
+  border-style: dashed;
+  color: var(--dm-g800);
+  font-weight: 500;
+}
+body.bakery-scope :is(.cake-prices__add-select, .cake-prices__add-btn) {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  box-shadow: none;
+  transform: none;
+  min-height: 38px;
+  font-weight: 500;
+}
+body.bakery-scope :is(.cake-prices__add-select, .cake-prices__add-btn):hover {
+  box-shadow: none;
+  transform: none;
+  background: var(--dm-surface-2);
+}
+body.bakery-scope .cake-prices__photo-btn {
+  border: 1px dashed var(--dm-g500);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface-2);
+  color: var(--dm-g700);
+}
+body.bakery-scope .cake-prices__photo-btn:hover { box-shadow: none; border-color: var(--dm-g700); }
+
+/* The bulk-pricing call-out and the flavour note become the one notice. */
+body.bakery-scope :is(.bulk-pricing-note, .flavor-note, .admin-shadow-banner) {
+  background: var(--dm-surface-2) !important;
+  border: var(--dm-border) !important;
+  border-left-width: 1px !important;
+  border-radius: var(--dm-r-sm) !important;
+  box-shadow: none !important;
+  font-size: 13px;
+  color: var(--dm-g800);
+  padding: var(--dm-3) var(--dm-4) !important;
+}
+body.bakery-scope .bulk-pricing-note strong {
+  display: inline;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--dm-g1000);
+}
+body.bakery-scope .flavor-note p { font-size: 13px; color: var(--dm-g800); }
+
+/* Profile nudge: a pink card with a 0%-wide progress bar and a red
+   percentage that read as an error. One quiet line instead. */
+body.bakery-scope .profile-nudge {
+  background: var(--dm-surface-2);
+  border: var(--dm-border);
+  border-left-width: 1px;
+  border-radius: var(--dm-r-sm);
+  box-shadow: none;
+  padding: var(--dm-3) var(--dm-4);
+}
+body.bakery-scope :is(.profile-nudge__bar, .profile-nudge__pct, .profile-nudge__icon) {
+  display: none;
+}
+body.bakery-scope .profile-nudge__title { font-size: 13.5px; font-weight: 600; }
+body.bakery-scope .profile-nudge__sub { font-size: 12.5px; color: var(--dm-g800); }
+body.bakery-scope .profile-nudge__items { margin-top: var(--dm-3); }
+body.bakery-scope .profile-nudge__chip {
+  border: var(--dm-border);
+  border-radius: var(--dm-r-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 11px;
+  transform: none;
+  box-shadow: none;
+}
+body.bakery-scope .profile-nudge__chip:hover { transform: none; box-shadow: none; background: var(--dm-surface-2); }
+
+/* Done screen */
+body.bakery-scope .done-card { text-align: left; padding: 0; }
+body.bakery-scope .done-card__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+body.bakery-scope .done-card__lede { margin: 0 0 var(--dm-5); font-size: 14px; color: var(--dm-g800); max-width: 62ch; }
+body.bakery-scope .done-card__actions { justify-content: flex-start; margin-top: var(--dm-5); }
+body.bakery-scope .done-summary {
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  padding: 0;
+  margin-top: var(--dm-4);
+}
+body.bakery-scope .done-summary__row {
+  padding: 10px var(--dm-4);
+  border-bottom: var(--dm-rule);
+  font-size: 13.5px;
+}
+body.bakery-scope .done-summary__row:last-child { border-bottom: 0; }
+body.bakery-scope .done-summary__value { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Order detail: nine equal-weight full-width cards in a 900px column,
+   with ~500px of dead margin either side at 1440. Give it two columns and
+   let the work sit in the wide one. */
+body.bakery-scope .bakery-order-main { max-width: 1180px; }
+/* Named `.order-detail`, NOT `.bakery-order-grid` — that class already
+   exists in orders.css as the VC page's two-up row, and borrowing it made
+   this wrapper a single-column grid on phones whose track sized to the
+   cakes table's min-content (473px inside a 358px box). */
+body.bakery-scope .order-detail__main,
+body.bakery-scope .order-detail__aside {
+  /* A grid item defaults to `min-width: auto`, which refuses to shrink below
+     its content. Every wide child here (tables, photo slots) then pushes the
+     track past the viewport. */
+  min-width: 0;
+}
+@media (min-width: 1000px) {
+  body.bakery-scope .order-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+    gap: var(--dm-4);
+    align-items: start;
+  }
+  body.bakery-scope .order-detail__aside {
+    position: sticky;
+    top: var(--dm-4);
+  }
+}
+
+/* The pre-existing VC two-up grid has the same latent blowout. */
+body.bakery-scope .bakery-order-grid > * { min-width: 0; }
+body.bakery-scope .orders-card { margin: 0 0 var(--dm-4); padding: var(--dm-5); }
+body.bakery-scope .upload-drop,
+body.bakery-scope .per-cake-uploads .upload-slot {
+  border: 1px dashed var(--dm-g500);
+  border-radius: var(--dm-r-sm);
+  background: var(--dm-surface-2);
+}
+body.bakery-scope .receipt__k,
+body.bakery-scope .detail-row__label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dm-g800);
+}
+body.bakery-scope .receipt__v,
+body.bakery-scope .detail-row__value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+body.bakery-scope .diary__loading,
+body.bakery-scope .cakes-empty {
+  background: var(--dm-surface-2);
+  border: 1px dashed var(--dm-g300);
+  border-radius: var(--dm-r-sm);
+  color: var(--dm-g800);
+  font-style: normal;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LOUD REGISTER — the door and the approval payoff. Nothing else.
+   Everything above this line is quiet; everything below is opt-in via
+   .dm-moment, and uses the ONE tilt angle and the ONE hard shadow.
+   ───────────────────────────────────────────────────────────── */
+body.bakery-scope .dm-moment { text-align: center; padding: var(--dm-7) var(--dm-5); }
+body.bakery-scope .dm-moment__eye {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--dm-accent-deep);
+  display: inline-block;
+  transform: rotate(var(--dm-tilt));
+  margin-bottom: var(--dm-3);
+}
+body.bakery-scope .dm-moment__h {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(27px, 4vw, 34px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 auto var(--dm-3);
+  max-width: 22ch;
+}
+body.bakery-scope .dm-moment__h em { font-style: italic; color: var(--dm-accent-deep); }
+body.bakery-scope .dm-moment__p {
+  margin: 0 auto var(--dm-5);
+  max-width: 48ch;
+  color: var(--dm-g800);
+  font-size: 15px;
+}
+body.bakery-scope .dm-card {
+  max-width: 440px;
+  margin: 0 auto;
+  text-align: left;
+  border: 1.5px solid var(--dm-g1000);
+  border-radius: 14px;
+  box-shadow: var(--dm-hard);
+  padding: var(--dm-5);
+  background: var(--dm-surface);
+}
+body.bakery-scope .dm-proof {
+  display: flex;
+  justify-content: center;
+  gap: var(--dm-5);
+  flex-wrap: wrap;
+  margin-top: var(--dm-6);
+  padding-top: var(--dm-5);
+  border-top: var(--dm-rule);
+}
+body.bakery-scope .dm-proof__i { text-align: center; }
+body.bakery-scope .dm-proof__n {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+body.bakery-scope .dm-proof__l { font-size: 12px; color: var(--dm-g800); margin-top: 3px; }
+
+/* `.settings-card__grid` was `repeat(auto-fit, minmax(220px, 1fr))`, which
+   with three fields resolves to `359px 359px 0px` — auto-fit leaves a
+   zero-width third track and the wrapped field sits alone on a new row
+   against an empty column. Two explicit columns, same as .bk-grid--half,
+   so the form reads as one system. */
+body.bakery-scope .settings-card__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 620px) {
+  body.bakery-scope .settings-card__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Photo-slot "REQUIRED" pills were a pink-tinted outline, i.e. a fifth
+   badge colour with no place in the ramp. They mean "waiting on you". */
+body.bakery-scope :is(.upload-slot__required, .per-cake-uploads .required-pill,
+                      .upload-slot__badge) {
+  background: var(--dm-warn-bg);
+  color: var(--dm-warn-fg);
+  border-color: transparent;
+  border-radius: var(--dm-r-sm);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* The diary's event marks carried a pink wash behind a monospace timestamp. */
+body.bakery-scope .diary__row,
+body.bakery-scope .diary li { background: transparent; }
+body.bakery-scope :is(.diary__time, .diary__when) {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--dm-g800);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Focus ring restoration ──────────────────────────────────────────
+   bakery-tokens.css defines ONE focus treatment for the whole bakery
+   surface (`body.bakery-scope :focus-visible { box-shadow: var(--dm-focus) }`),
+   but that selector is (0,2,1) — exactly the same specificity as the
+   component base rules below it, so every component that declares
+   `box-shadow: none` to flatten its resting state also silently flattened
+   its focus state, and source order handed the tie to the component.
+
+   The result was that no button, tab, queue row or day chip on any bakery
+   page had a visible focus indicator: tabbing through the queue moved an
+   invisible cursor. These re-assert the ring at (0,3,1) so they win on
+   specificity rather than on file order.
+
+   Deliberately NOT listed: `.bk-unit .bk-in`, whose ring is suppressed on
+   purpose at (0,4,1) because the `.bk-unit` wrapper draws it via
+   :focus-within for the whole group. ── */
+body.bakery-scope .bk-btn:focus-visible,
+body.bakery-scope .seg:focus-visible,
+body.bakery-scope .queue-row:focus-visible,
+body.bakery-scope .open-day-chip:focus-visible,
+body.bakery-scope .filter-chip:focus-visible,
+body.bakery-scope .profile-nudge__chip:focus-visible,
+body.bakery-scope .cake-prices__photo-btn:focus-visible,
+body.bakery-scope .bk-in:focus-visible,
+body.bakery-scope :is(.btn, .btn-primary, .btn-secondary, .btn-action,
+  .btn-invoice, .cake-prices__add-select, .cake-prices__add-btn):focus-visible {
+  box-shadow: var(--dm-focus);
+}
+
+/* ── Auth gating, re-asserted at bakery specificity ──────────────────
+   main.css hides `[data-auth-only]` at (0,1,0) and reveals it with
+   `display: revert` once Clerk resolves. Any bakery component that sets its
+   own `display` — `.savebar { display: flex }` is the live example — is
+   (0,2,1) and therefore beats the hide, so a signed-out visitor saw a
+   sticky "Save changes" bar over the sign-in card, wired to nothing.
+
+   Unlike `[hidden]`, which main.css backs with `!important`, this gate has
+   no such backstop, so re-state it here at (0,3,1): hidden until Clerk has
+   answered, then hidden for whichever side doesn't match. ── */
+body.bakery-scope:not(.clerk-loaded) [data-auth-only],
+body.bakery-scope[data-clerk="signed-out"] [data-auth-only="signed-in"],
+body.bakery-scope[data-clerk="signed-in"] [data-auth-only="signed-out"] {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CHAT DOCK — a persistent customer-messages button, bottom right.
+
+   The chat used to exist only as one card among nine on the assignment
+   detail page, so an unanswered customer question was invisible from
+   anywhere else in the product. Paired with
+   apps/bakery/scripts/bakery-chat-dock.js.
+   ══════════════════════════════════════════════════════════════════════ */
+body.bakery-scope .chat-dock {
+  position: fixed;
+  right: max(var(--dm-4), env(safe-area-inset-right));
+  bottom: max(var(--dm-4), env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--dm-2);
+  /* The wrapper must not swallow clicks on the page behind it. */
+  pointer-events: none;
+}
+body.bakery-scope .chat-dock > * { pointer-events: auto; }
+
+/* ── The button ── */
+body.bakery-scope .chat-dock__fab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dm-2);
+  min-height: 56px;
+  padding: 0 20px 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dm-g1000);
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--dm-sh-lg);
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+body.bakery-scope .chat-dock__fab:hover { transform: translateY(-1px); }
+body.bakery-scope .chat-dock__fab-icon { display: grid; place-items: center; flex: none; }
+body.bakery-scope .chat-dock__fab-label { white-space: nowrap; }
+
+/* Something is waiting on a reply: the button goes red and says so. */
+body.bakery-scope .chat-dock.is-urgent .chat-dock__fab {
+  background: var(--dm-accent-deep);
+}
+body.bakery-scope .chat-dock__fab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dm-accent-deep);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+body.bakery-scope .chat-dock__fab-count[hidden] { display: none; }
+
+/* The effect. A slow halo rather than a bounce — this sits on screen the
+   whole time a bakery is working, so it has to be noticeable once and then
+   ignorable. Driven by a class the script only adds while unread > 0 and
+   the panel is shut, and never under prefers-reduced-motion. */
+body.bakery-scope .chat-dock.has-unread .chat-dock__fab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 0 rgba(200, 30, 30, 0.55);
+  animation: chat-dock-halo 2.4s ease-out infinite;
+  pointer-events: none;
+}
+body.bakery-scope .chat-dock__fab { position: relative; }
+
+@keyframes chat-dock-halo {
+  0%   { box-shadow: 0 0 0 0 rgba(200, 30, 30, 0.5); }
+  70%  { box-shadow: 0 0 0 14px rgba(200, 30, 30, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 30, 30, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.bakery-scope .chat-dock.has-unread .chat-dock__fab::after { animation: none; }
+}
+
+/* Collapse to a circle on phones — the label costs more than it earns when
+   the viewport is 390px and the queue is behind it. */
+@media (max-width: 560px) {
+  body.bakery-scope .chat-dock__fab {
+    padding: 0;
+    width: 56px;
+    justify-content: center;
+  }
+  body.bakery-scope .chat-dock__fab-label {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  body.bakery-scope .chat-dock__fab-count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--dm-accent-deep);
+    color: #fff;
+    box-shadow: 0 0 0 2px var(--dm-surface);
+  }
+  body.bakery-scope .chat-dock.is-urgent .chat-dock__fab-count {
+    background: #fff;
+    color: var(--dm-accent-deep);
+  }
+}
+
+/* ── The drawer ── */
+body.bakery-scope .chat-dock__panel {
+  width: min(380px, calc(100vw - 2 * var(--dm-4)));
+  max-height: min(560px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  box-shadow: var(--dm-sh-lg);
+  overflow: hidden;
+}
+body.bakery-scope .chat-dock__panel[hidden] { display: none; }
+
+body.bakery-scope .chat-dock__head {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-2);
+  padding: var(--dm-3) var(--dm-3) var(--dm-3) var(--dm-4);
+  border-bottom: var(--dm-rule);
+  flex: none;
+}
+body.bakery-scope .chat-dock__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.bakery-scope .chat-dock__close {
+  border: 0;
+  background: transparent;
+  color: var(--dm-g800);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--dm-r-sm);
+  flex: none;
+}
+body.bakery-scope .chat-dock__close:hover {
+  background: var(--dm-surface-2);
+  color: var(--dm-g1000);
+}
+body.bakery-scope .chat-dock__body {
+  padding: var(--dm-3) var(--dm-4) var(--dm-4);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Inbox rows ── */
+body.bakery-scope .chat-dock__list { list-style: none; margin: 0; padding: 0; }
+body.bakery-scope .chat-dock__row {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-3);
+  padding: var(--dm-3) var(--dm-2);
+  border-radius: var(--dm-r-sm);
+  text-decoration: none;
+  color: inherit;
+  border-bottom: var(--dm-rule);
+}
+body.bakery-scope .chat-dock__list li:last-child .chat-dock__row { border-bottom: 0; }
+body.bakery-scope .chat-dock__row:hover { background: var(--dm-surface-2); }
+body.bakery-scope .chat-dock__row-main { min-width: 0; flex: 1; }
+body.bakery-scope .chat-dock__row-who {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.bakery-scope .chat-dock__row-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--dm-g800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.bakery-scope .chat-dock__empty { padding: var(--dm-5) var(--dm-2); text-align: center; }
+body.bakery-scope .chat-dock__empty-t {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+body.bakery-scope .chat-dock__empty-s {
+  font-size: 12.5px;
+  color: var(--dm-g800);
+  margin: 0;
+}
+
+/* The shared chat panel sizes itself to its host; inside the drawer the
+   drawer owns the scrolling. */
+body.bakery-scope .chat-dock__body .dm-chat__list {
+  max-height: none;
+  min-height: 0;
+}
+
+/* The in-page "Message the customer" card becomes the dock's doorway on the
+   order page, so there is one conversation, not two live pollers. */
+body.bakery-scope .chat-card__open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dm-2);
+}
+
+/* One door, one conversation. On a DOORWAY card the shared panel is mounted
+   into #chat-mount and then moved into the drawer; while it is still parented
+   to the card it must not paint, or the card shows a live "Write a message…"
+   composer right above the "Open messages" button that opens the same thread.
+   The selector stops applying the moment the dock adopts the element.
+   Scoped to --doorway on purpose: the VC order page hosts its conversation in
+   the card itself and must keep painting it. */
+body.bakery-scope .chat-card--doorway #chat-mount { display: none; }

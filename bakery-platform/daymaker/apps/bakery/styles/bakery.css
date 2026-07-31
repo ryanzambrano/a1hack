@@ -1,0 +1,1398 @@
+/* ─── Bakery hero ───────────────────────────────────────────── */
+
+body {
+  background-image: none;
+}
+
+.bakery-hero {
+  position: relative;
+  margin-bottom: 32px;
+  padding-top: 6px;
+}
+
+.bakery-hero__eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--pink-shadow);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  transform: none;
+  display: inline-block;
+}
+
+.bakery-hero__name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 700;
+  margin: 0 0 8px;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.bakery-hero__meta {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0 0 4px;
+  display: block;
+}
+
+/* Caveat-script subtitle directly under the city/address — mirrors the
+   coldcaked "checking on your queue…" hand-drawn subtitle. */
+.bakery-hero__sub--caveat {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0 0 6px;
+  transform: none;
+  display: inline-block;
+}
+
+.bakery-hero__row {
+  margin-top: 16px !important;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.bakery-hero__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--white);
+  border: 1px solid rgba(10, 10, 10, 0.18);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.bakery-hero__status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dm-accent-deep);
+  box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
+  animation: bakery-heart 1.6s ease-in-out infinite;
+}
+
+@keyframes bakery-heart {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6); }
+  50%      { transform: scale(1.35); box-shadow: var(--dm-sh-sm); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.bakery-edit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 14px 8px 10px;
+  border: var(--dm-border);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: var(--dm-sh-sm);
+  transition: transform 100ms ease, box-shadow 100ms ease, background 100ms ease;
+}
+
+.bakery-edit-link:hover,
+.bakery-edit-link:focus-visible {
+  background: #FFFBF1;
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.bakery-edit-link:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.bakery-edit-link:focus-visible {
+  outline: 2px dashed var(--ink);
+  outline-offset: 4px;
+}
+
+.bakery-edit-link__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--dm-accent-deep);
+  color: #FFFFFF;
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: var(--dm-sh-sm);
+}
+
+.bakery-edit-link__title,
+.bakery-edit-link__sub {
+  display: block;
+}
+
+.bakery-edit-link__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.bakery-edit-link__sub {
+  margin-top: 2px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+/* "Send invoice" button — same look as the "Create a Campaign" CTA
+   (.btn.nav-cta in site-chrome.css): pink fill, white text, ink border,
+   stamped ink shadow. Sits next to "Manage bakery info" in the hero row. */
+.btn-invoice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dm-accent-deep);
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  padding: 11px 22px;
+  border-radius: 10px;
+  border: var(--dm-border);
+  box-shadow: var(--dm-sh-md);
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.btn-invoice:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-md);
+  color: #FFFFFF;
+}
+
+.btn-invoice:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.btn-invoice__icon { font-size: 16px; line-height: 1; }
+
+.bakery-hero__actions-hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  color: var(--muted);
+  transform: none;
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .bakery-hero__row {
+    align-items: stretch;
+  }
+
+  .bakery-edit-link,
+  .btn-invoice {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bakery-edit-link {
+    justify-content: flex-start;
+  }
+}
+
+/* ─── Stat cards ────────────────────────────────────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  position: relative;
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 22px 22px 20px;
+  box-shadow: var(--dm-sh-md);
+  transform: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* Alternate the rotation per card so the row looks hand-placed, not stamped. */
+.stat-card:nth-child(2n) { transform: none; }
+.stat-card:nth-child(3n) { transform: none; }
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--dm-sh-md);
+}
+.stat-card:nth-child(2n):hover { transform: translateY(-2px); }
+.stat-card:nth-child(3n):hover { transform: translateY(-2px); }
+
+.stat-card__label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.stat-card__value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.stat-card--pink {
+  background: var(--dm-accent-deep);
+  border-color: var(--pink);
+  box-shadow: var(--dm-sh-md);
+}
+.stat-card--pink:hover { box-shadow: var(--dm-sh-md); }
+.stat-card--pink .stat-card__label { color: rgba(255, 255, 255, 0.92); }
+.stat-card--pink .stat-card__value,
+.stat-card--pink .stat-card__sub { color: #fff; }
+
+/* ─── Filter chips + search ─────────────────────────────────── */
+
+.queue-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: var(--dm-border);
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.filter-chip.is-active {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+}
+
+/* Queue search — pill input with pink focus ring, plus a "live" poll
+   chip on the right. Mirrors coldcaked's .bakery-queue__toolbar
+   visually while keeping Daymaker's `#search-input` / `.queue-poll`
+   selectors so the JS doesn't have to change. */
+.queue-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 280px;
+  min-width: 220px;
+  max-width: 560px;
+  background: var(--white);
+  border: 1.5px solid rgba(10, 10, 10, 0.18);
+  border-radius: 999px;
+  padding: 5px 6px 5px 14px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.queue-search:focus-within {
+  border-color: var(--pink);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.queue-search::before {
+  content: none;
+  font-size: 13px;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.queue-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: 0;
+}
+
+.queue-search__input::placeholder {
+  color: var(--muted);
+}
+
+.queue-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.queue-poll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--paper, #FBF7EA);
+  border: 1px solid rgba(10, 10, 10, 0.15);
+  border-radius: 999px;
+  padding: 4px 10px 4px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.queue-poll .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dm-accent-deep);
+  box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
+  animation: bakery-heart 1.6s ease-in-out infinite;
+}
+
+/* ─── Order/assignment cards ────────────────────────────────── */
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+  background: var(--white);
+  border: 1.5px dashed var(--ink);
+  border-radius: 14px;
+}
+
+.order-empty__icon {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 28px;
+  color: var(--pink-shadow);
+  margin-bottom: 8px;
+}
+
+.order-card {
+  position: relative;
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--dm-sh-md);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.order-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.order-card:focus-visible {
+  outline: 2px dashed var(--pink);
+  outline-offset: 3px;
+}
+
+.order-card__num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transform: none;
+  display: inline-block;
+}
+
+.order-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.order-card__recipient {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.order-card__address {
+  font-size: 14px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-card__meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.order-card__product {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.order-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.order-card__date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+}
+
+.source-badge--campaign { background: #FFE6F1; }
+.source-badge--vc { background: #E0F4FF; }
+
+/* ─── Status pills ──────────────────────────────────────────── */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: var(--dm-border);
+  transform: none;
+}
+
+.status-pill[data-status="pending"],
+.status-pill[data-status="pending_bakery"] {
+  background: #FFF5DB;
+  color: #6E5118;
+  border-color: #B8853A;
+}
+
+.status-pill[data-status="accepted"],
+.status-pill[data-status="confirmed"] {
+  background: #E0F4FF;
+  color: #18496E;
+  border-color: #3A7BB8;
+}
+
+.status-pill[data-status="in_production"],
+.status-pill[data-status="baking"] {
+  background: var(--dm-accent-deep);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.status-pill[data-status="ready"] {
+  background: #E8FFE0;
+  color: #185118;
+  border-color: #3AB85A;
+}
+
+.status-pill[data-status="in_transit"] {
+  background: #F0E0FF;
+  color: #4F186E;
+  border-color: #7B3AB8;
+}
+
+.status-pill[data-status="delivered"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.status-pill[data-status="failed"],
+.status-pill[data-status="cancelled"] {
+  background: #FFE0E0;
+  color: #6E1818;
+  border-color: #B83A3A;
+}
+
+/* ─── Assignment detail ─────────────────────────────────────── */
+
+.assignment-detail {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+@media (max-width: 800px) {
+  .assignment-detail { grid-template-columns: 1fr; }
+}
+
+.detail-section {
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: var(--dm-sh-md);
+  margin-bottom: 20px;
+}
+
+.detail-section h3 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+
+.detail-row:last-child { border-bottom: none; }
+
+.detail-row__label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.detail-row__value {
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.detail-row__value--mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ─── Photo upload ──────────────────────────────────────────── */
+
+.upload-drop {
+  border: 2px dashed var(--ink);
+  border-radius: 14px;
+  padding: 32px 24px;
+  text-align: center;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.upload-drop:hover,
+.upload-drop.is-dragging {
+  background: var(--white);
+  border-color: var(--pink-shadow);
+}
+
+.upload-drop__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.upload-drop__hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.upload-preview {
+  margin-top: 12px;
+  max-width: 100%;
+  border: var(--dm-border);
+  border-radius: 10px;
+  display: block;
+}
+
+/* ─── Detail map ────────────────────────────────────────────── */
+
+.detail-map {
+  height: 280px;
+  border: var(--dm-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* ─── Admin shadow banner (visible when ?as=<bakery_id> on /bakery) ─── */
+.admin-shadow-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: #FFF1B4;
+  border: var(--dm-border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.admin-shadow-banner a {
+  color: var(--ink, #0A0A0A);
+  text-decoration: underline;
+}
+
+/* ─── Cake-prices settings card (post-onboarding editor) ───── */
+/* The dashboard's pricing editor reuses the wizard's .cake-prices rows
+   but lives inside a generic .bakery-card on /bakery — that class only
+   exists in admin.css. Provide a local equivalent so the card frames
+   itself without pulling admin styles into the bakery surface. */
+.bakery-card {
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: var(--dm-sh-md);
+}
+
+/* ============================================================
+   COCOLA-ONLY VC QUEUE
+   Only renders when `bakery.is_vc_bakery === true`. Mirrors the
+   original coldcaked-lp /bakery view (queue card, batch package
+   card, apply badge, payout footer).
+   ============================================================ */
+
+.bakery-vc-queue {
+  position: relative;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 2px dashed rgba(10, 10, 10, 0.22);
+}
+
+/* Section header — title + chip on the left, Caveat status line under it.
+   The invoice button used to live on the right; with it gone, balance the
+   row by letting the title block breathe and dropping the right column. */
+.bakery-vc-queue__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.bakery-vc-queue__h {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* "Cocola · /vc orders" chip — pink ink on a soft pink wash, rotated
+   slightly so it reads like a hand-stamped section label. */
+.bakery-vc-queue__chip {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--dm-accent-deep);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: var(--dm-border);
+  transform: none;
+  display: inline-block;
+}
+
+.bakery-vc-queue__sub {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--ink);
+  font-size: 20px;
+  margin: 0;
+  transform: none;
+  display: inline-block;
+}
+
+.bakery-vc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+
+.stat-card__sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Apply-flow pill (top-tier VCs with fixed delivery dates) */
+.apply-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8e2e57;
+  background: linear-gradient(180deg, #ffd6e7, #ffc1d8);
+  border: 1px solid #b34070;
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 4px;
+}
+
+/* Cancel button sits next to each card's link */
+.order-card-wrap {
+  position: relative;
+}
+.order-card-wrap--apply > .order-card {
+  border-color: #b34070;
+}
+.order-card__cancel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--white);
+  cursor: pointer;
+}
+.order-card__cancel[disabled] {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.order-card__payout {
+  font-weight: 700;
+}
+.order-card__cta {
+  color: var(--pink-shadow, #C81E1E);
+  font-weight: 600;
+}
+
+/* Package card (multi-VC batch) */
+.order-card-wrap--package > .package-card {
+  display: block;
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: var(--dm-sh-md);
+}
+
+.package-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.package-card__badge {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #fff7d6;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.package-card__count {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.package-card__time {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.package-card__downloads {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.package-card__downloads button {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: var(--dm-border);
+  background: var(--white);
+  cursor: pointer;
+}
+.package-card__downloads button[disabled] {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.package-card__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border, #e5e0d3);
+}
+.package-card__row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border, #e5e0d3);
+  position: relative;
+}
+.package-card__row-link {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  align-items: center;
+  flex-wrap: wrap;
+  text-decoration: none;
+  color: inherit;
+  padding-right: 80px;
+}
+.package-card__num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.package-card__recipient {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.package-card__addr {
+  font-size: 12px;
+  color: var(--muted);
+}
+.package-card__size {
+  font-size: 12px;
+  color: var(--muted);
+}
+.package-card__footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #e5e0d3);
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Insert-card (printable slip — used by the JS card-download path) */
+.insert-card {
+  width: 420px;
+  padding: 28px;
+  background: #fffdf6;
+  border: 2px solid #2a2826;
+  border-radius: 12px;
+  font-family: 'Fraunces', Georgia, serif;
+  text-align: center;
+  color: #2a2826;
+}
+.insert-card__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+/* Logo art (coldcaked wordmark + bakery mark). Matches the original
+   coldcaked treatment — wordmarks rendered side-by-side with a thin
+   typographic × between them, capped width so a wide bakery wordmark
+   doesn't break the row. */
+.insert-card__logo {
+  display: block;
+  height: 26px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+.insert-card__logo--bakery { height: 32px; }
+.insert-card__brand-word {
+  /* Legacy fallback if a card still uses the text version. */
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.insert-card__brand-x {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1;
+  color: rgba(10, 10, 10, 0.55);
+  opacity: 1;
+}
+.insert-card__greeting {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+.insert-card__msg {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #555;
+  font-family: 'Inter', sans-serif;
+}
+.insert-card__qr {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.insert-card__qr img {
+  width: 220px;
+  height: 220px;
+  border: 1px solid #2a2826;
+}
+.insert-card__signoff {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  margin: 0;
+}
+
+/* VC order detail page now uses the shared .orders-card / .receipt /
+   .polaroid / .upload-drop / .diary frame from orders.css. The old
+   .bakery-vc-order overrides have been removed so the page picks up the
+   polished hand-drawn treatment instead of a flatter shim layout. */
+
+/* Print: only show the insert card body so a bakery can print one slip
+   per cake from the detail page. */
+@media print {
+  body.is-printing-insert > *:not(.insert-card-print-host) {
+    display: none !important;
+  }
+  body.is-printing-insert .insert-card-print-host {
+    display: block !important;
+    margin: 0;
+  }
+}
+
+/* ─── Bakery settings (single-page edit) ─────────────────────────── */
+.settings-card {
+  background: var(--white);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: var(--dm-sh-sm);
+}
+.settings-card__h {
+  margin: 0 0 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.settings-card__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* ============================================================
+   VC CAKE QUEUE — coldcaked-parity overrides.
+
+   The VC queue JS (bakery-vc-queue.js) renders the original
+   coldcaked layout: __head + __body + __footer stacked inside
+   a block-level card. The dashboard's main assignments queue
+   uses a different 3-column grid layout for .order-card. We
+   scope these rules under .bakery-vc-queue so the Cocola side
+   gets the coldcaked look without breaking the assignments
+   side.
+   ============================================================ */
+.bakery-vc-queue .order-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.bakery-vc-queue .order-card-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  position: static;
+}
+.bakery-vc-queue .order-card-wrap--apply > .order-card {
+  border-left: 4px solid var(--pink, #FF2D2D);
+}
+.bakery-vc-queue .order-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--white, #fff);
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: var(--dm-sh-md);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  cursor: pointer;
+  grid-template-columns: none;
+  align-items: stretch;
+  gap: 0;
+}
+.bakery-vc-queue .order-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+.bakery-vc-queue .order-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+.bakery-vc-queue .order-card__num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: var(--ink, #0A0A0A);
+  color: var(--bg, #F4F0E8);
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  transform: none;
+  display: inline-block;
+}
+.bakery-vc-queue .order-card__time {
+  color: var(--muted, #6B6358);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+.bakery-vc-queue .order-card__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+@media (min-width: 720px) {
+  .bakery-vc-queue .order-card__body {
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+  }
+}
+.bakery-vc-queue .order-card__recipient {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--ink, #0A0A0A);
+}
+.bakery-vc-queue .order-card__address {
+  color: var(--muted, #6B6358);
+  font-size: 14px;
+  margin-top: 4px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.bakery-vc-queue .order-card__product {
+  color: var(--ink, #0A0A0A);
+  font-size: 14px;
+  align-self: end;
+}
+.bakery-vc-queue .order-card__product strong { font-weight: 600; }
+.bakery-vc-queue .order-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed rgba(10, 10, 10, 0.18);
+  padding-top: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+.bakery-vc-queue .order-card__payout {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+}
+.bakery-vc-queue .order-card__cta {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 19px;
+  color: var(--pink, #FF2D2D);
+  font-weight: 600;
+}
+
+/* Cancel pill sits in its own row below the card, right-aligned
+   (overrides the absolute-top-right placement used by the
+   assignments queue so it can't sit on top of the link). */
+.bakery-vc-queue .order-card__cancel {
+  position: static;
+  align-self: flex-end;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1.5px dashed rgba(184, 58, 58, 0.45);
+  color: #6E1818;
+  cursor: pointer;
+  top: auto;
+  right: auto;
+}
+.bakery-vc-queue .order-card__cancel:hover {
+  background: rgba(184, 58, 58, 0.06);
+  border-color: #B83A3A;
+  transform: translateY(-1px);
+}
+
+/* Status pill rotation + colors match coldcaked exactly. */
+.bakery-vc-queue .status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1.5px solid;
+  vertical-align: middle;
+  transform: none;
+}
+.bakery-vc-queue .status-pill[data-status="pending_bakery"]    { background: #FFF5DB; color: #6E5118; border-color: #B8853A; }
+.bakery-vc-queue .status-pill[data-status="confirmed"]         { background: #E0F4FF; color: #18496E; border-color: #3A7BB8; }
+.bakery-vc-queue .status-pill[data-status="baking"]            { background: var(--dm-accent-deep); color: #fff; border-color: var(--pink-shadow, #C81E1E); }
+.bakery-vc-queue .status-pill[data-status="ready_for_pickup"]  { background: #E8FFE0; color: #185118; border-color: #3AB85A; }
+.bakery-vc-queue .status-pill[data-status="in_transit"]        { background: #F0E0FF; color: #4F186E; border-color: #7B3AB8; }
+.bakery-vc-queue .status-pill[data-status="delivered"]         { background: var(--ink, #0A0A0A); color: var(--bg, #F4F0E8); border-color: var(--ink, #0A0A0A); }
+.bakery-vc-queue .status-pill[data-status="delivery_failed"],
+.bakery-vc-queue .status-pill[data-status="cancelled"],
+.bakery-vc-queue .status-pill[data-status="refunded"]          { background: #FFE0E0; color: #6E1818; border-color: #B83A3A; }
+.bakery-vc-queue .status-pill[data-status="pending_manual"]    { background: #FFF7E9; color: #6E4E18; border-color: #B8853A; }
+
+/* Apply badge matches the coldcaked pink pill. */
+.bakery-vc-queue .apply-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  background: var(--dm-accent-deep);
+  color: #fff;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid var(--ink, #0A0A0A);
+  margin: 0;
+}
+
+/* ASAP campaign order on the queue that still needs a delivery date. Pull
+   the eye with a pink edge + an alert pill so the bakery sets an ETA first. */
+.order-card--needs-eta {
+  border-color: var(--pink, #FF2D2D);
+  box-shadow: var(--dm-sh-md);
+}
+
+.needs-eta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: var(--dm-accent-deep);
+  color: #fff;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: var(--dm-border);
+}
+
+/* Unread customer-message badge on a queue card. */
+.order-card__unread {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  background: var(--dm-accent-deep);
+  color: #fff;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  white-space: nowrap;
+  border: var(--dm-border);
+}
+
+/* ─── Profile-completion nudge ──────────────────────────────────────
+   Pressure-free prompt shown on the dashboard after approval when the
+   bakery's optional brand fields are still empty. Same paper-card look
+   as the rest of the surface, pink accent edge, dismissable. */
+.profile-nudge {
+  position: relative;
+  max-width: 920px;
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  background: #fff5fa;
+  border: var(--dm-border);
+  border-left: 5px solid var(--pink, #FF2D2D);
+  border-radius: 12px;
+  box-shadow: var(--dm-sh-md);
+}
+.profile-nudge__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted, #6B6358);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.profile-nudge__dismiss:hover { color: var(--ink, #0A0A0A); background: rgba(0,0,0,0.05); }
+.profile-nudge__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.profile-nudge__icon { font-size: 22px; line-height: 1; flex: none; }
+.profile-nudge__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink, #0A0A0A);
+}
+.profile-nudge__sub {
+  font-size: 13px;
+  color: var(--muted, #6B6358);
+  margin-top: 1px;
+}
+.profile-nudge__pct {
+  margin-left: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--pink-shadow, #B42318);
+  flex: none;
+  padding-right: 18px;
+}
+.profile-nudge__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #fff;
+  border: var(--dm-border);
+  overflow: hidden;
+  margin: 12px 0 12px;
+}
+.profile-nudge__bar-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--dm-accent-deep);
+  transition: width 320ms ease;
+}
+.profile-nudge__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.profile-nudge__chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #0A0A0A);
+  text-decoration: none;
+  background: #fff;
+  border: var(--dm-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.profile-nudge__chip:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-sm);
+}

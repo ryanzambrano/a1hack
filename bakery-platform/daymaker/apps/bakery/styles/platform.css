@@ -1,0 +1,26 @@
+/* Platform overrides for the vendored Daymaker bakery dashboard.
+   These bakeries are managed by Daymaker but run independently - orders are
+   NOT routed through daymaker.com - so the routing/settlement concepts don't
+   apply and are removed here:
+     - the flavour + "deliver at 10:00" routing policy note
+     - the payout / "this period" earnings KPI and the Payments statement link
+   (Payout money on rows and the "You invoice us" detail line are removed at
+   the source by the adapter returning payout_local_cents: null, and the
+   "Lillestrom . bakes Mon-Sat . up to 20 cakes a day" hero line by the
+   adapter sending no city/open_days/max_daily_deliveries.)
+   Loaded after the vendored CSS so it wins; the dashboard code is untouched. */
+
+body.bakery-scope #flavor-note,
+body.bakery-scope #payouts-btn,
+body.bakery-scope #kpi-payout {
+  display: none !important;
+}
+
+/* With the payout KPI gone, the remaining "Assignments" stat should not
+   stretch across half of a two-up grid. */
+body.bakery-scope #bakery-stats.kpis--pair {
+  display: block;
+}
+body.bakery-scope #bakery-stats .kpi--lead {
+  max-width: 360px;
+}

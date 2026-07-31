@@ -1,0 +1,142 @@
+/* Product admin, on the bakery dashboard's design system. Reads the dm tokens
+   aliased by bakery-tokens.css under body.bakery-scope, so it matches the
+   dashboard hairline-for-hairline. Only the product-admin-specific pieces
+   (table, form panel, option rows) live here. */
+
+/* Author display rules must never defeat the hidden attribute. */
+[hidden] { display: none !important; }
+
+body.bakery-scope {
+  padding-bottom: 80px;
+}
+
+/* Small button size the base bk-btn variants don't define. */
+.bakery-scope .bk-btn--sm {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+/* ── Product table ─────────────────────────────────────────── */
+.bakery-scope .pa-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  overflow: hidden;
+  font-size: 14.5px;
+}
+.bakery-scope .pa-table th,
+.bakery-scope .pa-table td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: var(--dm-rule);
+  vertical-align: middle;
+}
+.bakery-scope .pa-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dm-g800);
+  background: var(--dm-surface-2);
+}
+.bakery-scope .pa-table tbody tr:last-child td { border-bottom: 0; }
+.bakery-scope .pa-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.bakery-scope .pa-col-act { text-align: right; white-space: nowrap; }
+
+.bakery-scope .pa-row.is-inactive { background: var(--dm-g50); }
+.bakery-scope .pa-row.is-inactive .pa-name { color: var(--dm-g700); }
+
+.bakery-scope .pa-ident { display: flex; align-items: center; gap: 12px; }
+.bakery-scope .pa-thumb {
+  width: 42px; height: 42px; flex: none;
+  border-radius: var(--dm-r-sm);
+  object-fit: cover;
+  background: var(--dm-g100);
+  border: var(--dm-rule);
+}
+.bakery-scope .pa-thumb--empty { display: inline-block; }
+.bakery-scope .pa-name { font-weight: 600; color: var(--dm-g1000); }
+.bakery-scope .pa-price { font-family: 'Fraunces', Georgia, serif; font-weight: 600; }
+.bakery-scope .pa-muted { color: var(--dm-g800); }
+.bakery-scope .pa-actions { display: inline-flex; gap: 8px; }
+
+.bakery-scope .pa-loading,
+.bakery-scope .pa-empty { color: var(--dm-g800); padding: 20px 4px; }
+
+/* ── Create / edit panel ───────────────────────────────────── */
+.bakery-scope .pa-panel {
+  background: var(--dm-surface);
+  border: var(--dm-border);
+  border-radius: var(--dm-r);
+  box-shadow: var(--dm-sh-md);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.bakery-scope .pa-panel__h {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+.bakery-scope .pa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.bakery-scope .pa-field { display: flex; flex-direction: column; gap: 6px; }
+.bakery-scope .pa-field--wide { grid-column: 1 / -1; }
+.bakery-scope .pa-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dm-g800);
+}
+.bakery-scope .pa-hint { font-size: 12.5px; color: var(--dm-g700); margin: 2px 0 0; }
+
+.bakery-scope .pa-checks { flex-direction: row; gap: 22px; align-items: center; padding-top: 4px; }
+.bakery-scope .pa-check { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; cursor: pointer; }
+.bakery-scope .pa-check input { width: 16px; height: 16px; accent-color: var(--dm-accent); }
+
+/* ── Option-group editor ───────────────────────────────────── */
+.bakery-scope .pa-options { margin-top: 20px; padding-top: 18px; border-top: var(--dm-rule); }
+.bakery-scope .pa-options .pa-hint { margin-bottom: 10px; }
+.bakery-scope .opt-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1.3fr 0.8fr auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.bakery-scope .opt-default { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; color: var(--dm-g800); }
+.bakery-scope .opt-default input { accent-color: var(--dm-accent); }
+
+/* ── Actions + errors ──────────────────────────────────────── */
+.bakery-scope .pa-panel .pa-actions { display: flex; gap: 10px; margin-top: 20px; }
+.bakery-scope .pa-error {
+  background: var(--dm-bad-bg);
+  color: var(--dm-bad-fg);
+  border-radius: var(--dm-r-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-top: 14px;
+}
+.bakery-scope .pa-row-err td { padding: 0 16px 12px; border-bottom: var(--dm-rule); }
+
+/* ── Phone ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .bakery-scope .pa-grid { grid-template-columns: 1fr; }
+  .bakery-scope .opt-row { grid-template-columns: 1fr 1fr; }
+  .bakery-scope .pa-table thead { display: none; }
+  .bakery-scope .pa-table,
+  .bakery-scope .pa-table tbody,
+  .bakery-scope .pa-table tr,
+  .bakery-scope .pa-table td { display: block; width: 100%; }
+  .bakery-scope .pa-table tr { border-bottom: var(--dm-rule); padding: 8px 0; }
+  .bakery-scope .pa-table td { border: 0; padding: 4px 16px; }
+  .bakery-scope .pa-col-act { text-align: left; }
+  .bakery-scope .pa-table .num { text-align: left; }
+}

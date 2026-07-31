@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   DAYMAKER PRODUCT TOKENS  —  the shared ramp
+
+   /admin, /customer and /bakery each independently derived the same
+   neutral scale off Vercel's Geist (measured 2026-07-25). This file is
+   that scale, once, so a hairline is the same hairline on every surface.
+
+   Scoping: the values live on :root as `--dm-*` and are strictly additive
+   — nothing here restyles an element. Each surface opts in by aliasing
+   its own legacy names to these (see apps/bakery/styles/bakery-tokens.css
+   for the pattern). apps/admin/styles/admin-tokens.css (--a-*) and the
+   `--c-*` block in apps/customer/styles/customer.css already carry
+   identical values; folding them onto this file is a separate, mechanical
+   change and deliberately NOT done here, so this pass can't destabilise
+   two surfaces that have already been reviewed.
+
+   Two registers, one system:
+
+     QUIET is the default on anything transactional — a queue, a form, a
+     table, a pay button. Flat hairlines, one soft elevation, tabular
+     numerals, no tilt. Red means primary action, danger, or "we need
+     something from you"; it is never the progress bar, the eyebrow, or
+     the healthy state.
+
+     LOUD is opt-in and rare — the door of a flow, a claim reveal, a
+     delivery-photo payoff. Fraunces, Caveat, ONE tilt angle, ONE hard
+     shadow. Personality where it earns something.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Neutral ramp (Geist gray, warmed 4° toward the brand's paper) ── */
+  --dm-g50:   hsl(30, 12%, 98%);
+  --dm-g100:  hsl(30,  9%, 96%);
+  --dm-g200:  hsl(30,  7%, 93%);
+  --dm-g300:  hsl(30,  6%, 89%);
+  --dm-g500:  hsl(30,  5%, 76%);
+  --dm-g700:  hsl(30,  5%, 55%);   /* placeholders, tertiary text */
+  --dm-g800:  hsl(30,  6%, 44%);   /* secondary text, labels */
+  --dm-g1000: hsl(30,  8%,  8%);   /* primary text */
+
+  --dm-surface:   #ffffff;
+  --dm-surface-2: var(--dm-g50);   /* hover, table head, subtle fill */
+
+  /* ── Structure ── */
+  --dm-r:      8px;                /* cards, panels */
+  --dm-r-sm:   6px;                /* controls, chips */
+  --dm-border: 1px solid var(--dm-g300);
+  --dm-rule:   1px solid var(--dm-g200);
+  --dm-sh-sm:  0 1px 2px rgba(20, 16, 12, 0.04);
+  --dm-sh-md:  0 1px 2px rgba(20, 16, 12, 0.04),
+               0 8px 16px -10px rgba(20, 16, 12, 0.10);
+  --dm-sh-lg:  0 1px 2px rgba(20, 16, 12, 0.04),
+               0 20px 32px -12px rgba(20, 16, 12, 0.12);
+
+  /* ── Spacing scale — every gap and pad is one of these ── */
+  --dm-1: 4px;  --dm-2: 8px;  --dm-3: 12px; --dm-4: 16px;
+  --dm-5: 24px; --dm-6: 32px; --dm-7: 48px; --dm-8: 64px;
+
+  /* ── ONE status ramp. Every chip, badge and panel reads from it. ──
+     Meaning is fixed, so a colour means the same thing on every surface:
+       neutral  nothing is happening yet / informational
+       info     acknowledged and moving (accepted, baking, in transit)
+       warn     waiting on the person looking at the screen
+       good     done
+       bad      failed, cancelled, refunded
+     Note what is NOT here: a "brand red" status. In production is info. */
+  --dm-neutral-bg: var(--dm-g200);      --dm-neutral-fg: var(--dm-g800);
+  --dm-info-bg:    hsl(211, 100%, 96%); --dm-info-fg:    hsl(211, 100%, 38%);
+  --dm-warn-bg:    hsl(38, 100%, 94%);  --dm-warn-fg:    hsl(28, 90%, 33%);
+  --dm-good-bg:    hsl(140, 55%, 95%);  --dm-good-fg:    hsl(147, 55%, 27%);
+  --dm-bad-bg:     hsl(0, 100%, 97%);   --dm-bad-fg:     hsl(358, 68%, 44%);
+
+  /* ── The one brand signal ──
+     #FF2D2D behind white text measures 3.71:1 and fails WCAG AA at any
+     size below ~24px. It stays the brand red as ink, as a border, and as
+     large display type; any FILL carrying small white text uses
+     --dm-accent-deep (5.74:1). This is why "accent" and "accent-deep"
+     are separate tokens rather than a hover pair. */
+  --dm-accent:       #FF2D2D;
+  --dm-accent-deep:  #C81E1E;      /* fills under white text */
+  --dm-accent-press: #A81616;
+  --dm-accent-hover: #E01F1F;
+  --dm-accent-wash:  hsl(0, 100%, 97%);
+  --dm-focus: 0 0 0 1px var(--dm-accent), 0 0 0 4px rgba(255, 45, 45, 0.16);
+
+  /* ── Loud register (moments only) ── */
+  --dm-tilt: -1deg;                          /* the ONE tilt angle */
+  --dm-hard: 6px 6px 0 var(--dm-g1000);      /* the ONE hard shadow */
+}

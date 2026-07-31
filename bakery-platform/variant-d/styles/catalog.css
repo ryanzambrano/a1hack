@@ -1,0 +1,335 @@
+/* Variant D "Lekent" - storefront/catalog page styles. Loads after theme.css. */
+
+/* Author display rules below would otherwise beat the UA [hidden] rule */
+[hidden] {
+  display: none !important;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+/* Visible focus everywhere */
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 0 6px;
+  background: var(--bg);
+}
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.brand:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+.brand-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brand-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.cart-link {
+  flex: none;
+  position: relative;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+}
+.cart-link:hover {
+  text-decoration: none;
+}
+.cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+
+/* Hero with sprinkle confetti */
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin: 16px 0 14px;
+  padding: 28px 22px;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 5% 16%, var(--accent-soft) 0 7px, transparent 8px),
+    radial-gradient(circle at 13% 82%, var(--mint) 0 5px, transparent 6px),
+    radial-gradient(circle at 30% 6%, var(--line) 0 4px, transparent 5px),
+    radial-gradient(circle at 67% 8%, var(--accent-soft) 0 4px, transparent 5px),
+    radial-gradient(circle at 91% 20%, var(--mint) 0 6px, transparent 7px),
+    radial-gradient(circle at 96% 72%, var(--accent-soft) 0 8px, transparent 9px),
+    radial-gradient(circle at 76% 92%, var(--accent-soft) 0 5px, transparent 6px);
+}
+.hero > * {
+  position: relative;
+}
+.hero-kicker {
+  margin-bottom: 12px;
+}
+.hero-title {
+  margin-bottom: 6px;
+}
+.hero-desc {
+  max-width: 46rem;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.pickup-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pickup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.pickup-chip::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.pickup-chip:nth-child(even)::before {
+  background: var(--mint-ink);
+}
+
+/* Status cards: loading, error, empty */
+.status-card {
+  margin: 26px 0;
+  padding: 34px 20px;
+  text-align: center;
+}
+.status-text {
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* Category pill navigation */
+.category-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 20px;
+}
+.cat-pill {
+  display: inline-block;
+  padding: 9px 22px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  color: var(--ink);
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.cat-pill:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.cat-pill[aria-current="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+
+/* Category sections */
+.category-section {
+  margin-bottom: 32px;
+  scroll-margin-top: 92px;
+}
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.category-count {
+  font-size: 0.75rem;
+}
+
+/* Product grid and cards */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+.product-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+}
+.product-card:hover {
+  text-decoration: none;
+}
+.product-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+.product-figure {
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+}
+.product-card:nth-child(even) .product-figure {
+  background: var(--mint);
+}
+.product-figure img {
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  height: 116px;
+  object-fit: contain;
+}
+.product-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px 18px;
+}
+.product-name {
+  margin: 0;
+}
+.product-desc {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+.product-meta {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product-price {
+  font-size: 1.02rem;
+}
+.lead-badge {
+  font-size: 0.72rem;
+}
+
+/* Footer */
+.site-footer {
+  padding: 8px 0 44px;
+}
+.footer-card {
+  padding: 24px 22px;
+}
+.footer-title {
+  margin-bottom: 10px;
+}
+.contact-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.contact-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.contact-label {
+  flex: none;
+  min-width: 74px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  align-self: center;
+}
+.footer-note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Wider screens */
+@media (min-width: 641px) {
+  .hero {
+    padding: 36px 32px;
+  }
+}

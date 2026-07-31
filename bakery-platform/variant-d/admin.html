@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakeriadmin</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/admin.css">
+</head>
+<body>
+  <a class="skip-link" href="#innhold">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="header-bar card">
+        <a class="brand" href="./index.html">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span class="brand-name" id="brand-name">Bakeriet</span>
+          <span class="badge badge-mint admin-tag">Admin</span>
+        </a>
+        <a class="btn cart-link" href="./cart.html" id="cart-link">
+          Handlekurv
+          <span class="cart-badge" id="cart-badge" hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="innhold" class="container">
+    <h1>Bakeriadmin</h1>
+    <p class="muted page-sub">Full kontroll på bestillinger og produkter. Ha en søt dag!</p>
+
+    <div class="tabs">
+      <button type="button" class="tab tab-active" id="tab-orders" aria-pressed="true">Bestillinger</button>
+      <button type="button" class="tab" id="tab-products" aria-pressed="false">Produkter</button>
+    </div>
+
+    <section id="panel-orders" aria-label="Bestillinger">
+      <div class="toolbar">
+        <div class="chips" id="order-filters" role="group" aria-label="Filtrer på status"></div>
+        <button class="btn btn-sm btn-refresh" id="btn-refresh" type="button">Oppdater</button>
+      </div>
+      <p id="orders-status" class="muted" aria-live="polite"></p>
+      <div id="orders-list"></div>
+    </section>
+
+    <section id="panel-products" hidden aria-label="Produkter">
+      <div class="toolbar">
+        <button class="btn btn-primary btn-sm" id="btn-new-product" type="button">Nytt produkt</button>
+        <p id="products-note" class="note-ok" aria-live="polite"></p>
+      </div>
+      <p id="products-status" class="muted" aria-live="polite"></p>
+
+      <section class="card form-panel" id="form-panel" hidden>
+        <h2 id="form-title">Nytt produkt</h2>
+        <form id="product-form" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="f-name">Navn *</label>
+              <input type="text" id="f-name" maxlength="120" placeholder="F.eks. Eplekake">
+            </div>
+            <div class="field">
+              <label for="f-category">Kategori</label>
+              <input type="text" id="f-category" list="category-list" placeholder="F.eks. Kaker">
+              <datalist id="category-list"></datalist>
+            </div>
+            <div class="field field-wide">
+              <label for="f-desc">Beskrivelse</label>
+              <textarea id="f-desc" rows="2" placeholder="Kort og fristende beskrivelse"></textarea>
+            </div>
+            <div class="field field-wide">
+              <label for="f-image">Bildeadresse</label>
+              <input type="text" id="f-image" list="image-list" placeholder="/img/blotkake.svg">
+              <datalist id="image-list">
+                <option value="/img/blotkake.svg"></option>
+                <option value="/img/croissant.svg"></option>
+                <option value="/img/festkake.svg"></option>
+                <option value="/img/gulrotkake.svg"></option>
+                <option value="/img/kanelbolle.svg"></option>
+                <option value="/img/kransekake.svg"></option>
+                <option value="/img/makroner.svg"></option>
+                <option value="/img/sjokoladekake.svg"></option>
+                <option value="/img/skolebrod.svg"></option>
+                <option value="/img/surdeigsbrod.svg"></option>
+              </datalist>
+              <p class="hint">Bilder som finnes: /img/blotkake.svg, /img/croissant.svg, /img/festkake.svg, /img/gulrotkake.svg, /img/kanelbolle.svg, /img/kransekake.svg, /img/makroner.svg, /img/sjokoladekake.svg, /img/skolebrod.svg, /img/surdeigsbrod.svg</p>
+            </div>
+            <div class="field">
+              <label for="f-price">Grunnpris i kroner *</label>
+              <input type="text" id="f-price" inputmode="decimal" placeholder="F.eks. 490">
+            </div>
+            <div class="field">
+              <label for="f-lead">Ledetid i dager (0 til 30)</label>
+              <input type="number" id="f-lead" min="0" max="30" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="f-sort">Sortering</label>
+              <input type="number" id="f-sort" step="1" value="0">
+              <p class="hint">Lavere tall vises først i butikken.</p>
+            </div>
+            <div class="field">
+              <label class="check-label" for="f-cake">
+                <input type="checkbox" id="f-cake"> Kan ha tekst på kaken
+              </label>
+              <label for="f-cake-price">Pris for kaketekst i kroner</label>
+              <input type="text" id="f-cake-price" inputmode="decimal" placeholder="F.eks. 80" disabled>
+            </div>
+          </div>
+
+          <fieldset class="opt-editor">
+            <legend>Valg og varianter</legend>
+            <p class="hint">Rader med samme gruppenavn blir en valggruppe. Merk ett standardvalg per gruppe. Rekkefølgen på radene bestemmer rekkefølgen i butikken.</p>
+            <div id="opt-rows"></div>
+            <button type="button" class="btn btn-sm" id="btn-add-opt">Legg til rad</button>
+          </fieldset>
+
+          <p class="form-error" id="form-error" role="alert"></p>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btn-save">Lagre produktet</button>
+            <button type="button" class="btn" id="btn-cancel">Avbryt</button>
+          </div>
+        </form>
+      </section>
+
+      <div id="products-list"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/admin.js"></script>
+</body>
+</html>

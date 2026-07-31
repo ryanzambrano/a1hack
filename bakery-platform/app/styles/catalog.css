@@ -1,0 +1,223 @@
+/* App "Daymaker System" storefront styles. theme.css loads first. */
+
+/* Author display rules must never defeat the hidden attribute. */
+[hidden] { display: none !important; }
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  padding: 8px 14px;
+  border-radius: var(--radius-input);
+  z-index: 40;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+}
+
+/* Header: white, sticky, hairline bottom (shared across pages) */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand:hover { color: var(--accent-strong); }
+.cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.cart-badge {
+  min-width: 20px;
+  padding: 2px 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Intro panel */
+.intro { padding: 24px 0 4px; }
+.intro-desc {
+  max-width: 560px;
+  margin: 0;
+}
+.intro-facts {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.fact {
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+.fact:first-child { border-top: 0; }
+.intro-facts .label { margin-bottom: 2px; }
+.fact-value {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.fact-sub {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+/* Category nav: underline tabs */
+.cat-nav {
+  position: sticky;
+  top: 57px;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  margin-top: 12px;
+}
+.cat-nav-list {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-tab {
+  flex: 0 0 auto;
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.cat-tab:hover { color: var(--accent-strong); }
+.cat-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* Catalog sections */
+.cat-section {
+  padding: 20px 0 4px;
+  scroll-margin-top: 116px;
+}
+.cat-title { margin-bottom: 10px; }
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+/* Product cards */
+.product-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.product-card:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-tint);
+}
+.product-media {
+  aspect-ratio: 4 / 3;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.product-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 10px 12px 12px;
+}
+.product-name {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.product-desc {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-meta {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product-price { font-size: 1rem; }
+.product-lead { white-space: nowrap; }
+
+/* Loading, error and empty states */
+.state-loading {
+  text-align: center;
+  padding: 48px 0;
+}
+.state-card {
+  max-width: 440px;
+  margin: 32px auto;
+  padding: 22px 20px;
+  text-align: center;
+}
+.state-card .btn { margin-top: 6px; }
+
+/* Footer */
+/* Footer: hairline top border (shared across pages) */
+.site-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+  padding: 16px 0 32px;
+  font-size: 0.85rem;
+}
+.site-footer p { margin: 0 0 2px; }
+
+/* Wider screens */
+@media (min-width: 640px) {
+  .intro { padding-top: 32px; }
+  .intro-facts { grid-template-columns: repeat(3, 1fr); }
+  .fact {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding: 12px 16px;
+  }
+  .fact:first-child { border-left: 0; }
+}

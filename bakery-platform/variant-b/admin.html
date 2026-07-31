@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/admin.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html">Bakeriet på Hjørnet</a>
+      <span class="admin-tag">Admin</span>
+      <nav class="site-nav" aria-label="Hovedmeny">
+        <a href="./index.html">Butikk</a>
+        <a class="cart-link" href="./cart.html">
+          Kurv
+          <span class="cart-badge" id="cart-badge">0</span>
+          <span class="sr-only">varer i kurven</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main" id="main">
+    <h1>Administrasjon</h1>
+
+    <div class="tabs" role="tablist" aria-label="Adminvisninger">
+      <button class="tab is-active" id="tab-orders" role="tab" aria-selected="true" aria-controls="panel-orders" type="button">Bestillinger</button>
+      <button class="tab" id="tab-products" role="tab" aria-selected="false" aria-controls="panel-products" type="button">Produkter</button>
+    </div>
+
+    <section id="panel-orders" role="tabpanel" aria-labelledby="tab-orders">
+      <div class="toolbar">
+        <div class="filters" id="order-filters"></div>
+        <button class="btn btn-small" id="refresh-orders" type="button">Oppdater</button>
+      </div>
+      <div id="orders-status" aria-live="polite"></div>
+      <div id="orders-list"></div>
+    </section>
+
+    <section id="panel-products" role="tabpanel" aria-labelledby="tab-products" hidden>
+      <div class="toolbar">
+        <button class="btn btn-small" id="new-product" type="button">Nytt produkt</button>
+        <button class="btn btn-small" id="refresh-products" type="button">Oppdater</button>
+      </div>
+
+      <div id="product-form-wrap" hidden>
+        <form id="product-form" novalidate>
+          <h2 id="product-form-title">Nytt produkt</h2>
+          <div class="form-grid">
+            <div>
+              <label for="f-name">Navn</label>
+              <input id="f-name" name="name" type="text" autocomplete="off">
+            </div>
+            <div>
+              <label for="f-category">Kategori</label>
+              <input id="f-category" name="category" type="text" list="category-list" autocomplete="off">
+              <datalist id="category-list"></datalist>
+            </div>
+            <div class="form-span">
+              <label for="f-description">Beskrivelse</label>
+              <textarea id="f-description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-span">
+              <label for="f-image">Bildeadresse</label>
+              <input id="f-image" name="imageUrl" type="text" list="image-list" placeholder="/img/blotkake.svg" autocomplete="off">
+              <datalist id="image-list">
+                <option value="/img/blotkake.svg"></option>
+                <option value="/img/croissant.svg"></option>
+                <option value="/img/festkake.svg"></option>
+                <option value="/img/gulrotkake.svg"></option>
+                <option value="/img/kanelbolle.svg"></option>
+                <option value="/img/kransekake.svg"></option>
+                <option value="/img/makroner.svg"></option>
+                <option value="/img/sjokoladekake.svg"></option>
+                <option value="/img/skolebrod.svg"></option>
+                <option value="/img/surdeigsbrod.svg"></option>
+              </datalist>
+              <p class="hint muted">Tilgjengelige bilder: /img/blotkake.svg, /img/croissant.svg, /img/festkake.svg, /img/gulrotkake.svg, /img/kanelbolle.svg, /img/kransekake.svg, /img/makroner.svg, /img/sjokoladekake.svg, /img/skolebrod.svg, /img/surdeigsbrod.svg</p>
+            </div>
+            <div>
+              <label for="f-price">Grunnpris (kr)</label>
+              <input id="f-price" name="basePrice" type="text" inputmode="decimal" autocomplete="off">
+            </div>
+            <div>
+              <label for="f-leadtime">Ledetid i dager (0-30)</label>
+              <input id="f-leadtime" name="leadTimeDays" type="number" min="0" max="30" step="1" value="0">
+            </div>
+            <div>
+              <label for="f-sort">Sortering</label>
+              <input id="f-sort" name="sortOrder" type="number" step="1" value="0">
+            </div>
+            <div class="check-col">
+              <div class="check-row">
+                <input id="f-caketext" name="canHaveCakeText" type="checkbox">
+                <label for="f-caketext">Kan ha kaketekst</label>
+              </div>
+              <div class="check-row">
+                <input id="f-active" name="active" type="checkbox" checked>
+                <label for="f-active">Aktivt produkt</label>
+              </div>
+            </div>
+            <div>
+              <label for="f-caketext-price">Pris for kaketekst (kr)</label>
+              <input id="f-caketext-price" name="cakeTextPrice" type="text" inputmode="decimal" value="0" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="options-editor">
+            <span class="label">Valggrupper</span>
+            <p class="hint muted">Valg med samme gruppenavn samles i en gruppe. Marker ett valg som standard i hver gruppe. Radene sendes i den rekkefølgen de står.</p>
+            <div id="option-rows"></div>
+            <button class="btn btn-small" id="add-option-row" type="button">+ Legg til valg</button>
+          </div>
+
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" id="save-product" type="submit">Lagre</button>
+            <button class="btn" id="cancel-form" type="button">Avbryt</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="products-status" aria-live="polite"></div>
+      <div id="products-list"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/admin.js"></script>
+</body>
+</html>

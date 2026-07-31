@@ -1,0 +1,2306 @@
+/* ==========================================================================
+   Bakery assignment detail - self-contained stylesheet.
+   Owns the entire page: body, nav, hero, cards, polaroids, diary, modal.
+   Does not depend on main.css or bakery.css - avoids cascade conflicts.
+   Visual language matches the coldcaked bakery-order page: paper cards
+   with yellow tape, polaroid photos, journal-style timeline.
+   ========================================================================== */
+
+:root {
+  --bg: #F4F0E8;
+  --ink: #0A0A0A;
+  --pink: #FF2D2D;
+  --pink-shadow: #C81E1E;
+  --tape: rgba(255, 232, 138, 0.7);
+  --tape-edge: rgba(180, 152, 60, 0.4);
+  --muted: #6B6358;
+  --paper: #FBF7EA;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body.bakery-body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a { color: inherit; }
+
+/* ─── Auth-only visibility (Clerk gating) ────────────────── */
+
+[data-auth-only="signed-in"],
+[data-auth-only="signed-out"] { display: none; }
+
+body.clerk-loaded[data-clerk="signed-in"] [data-auth-only="signed-in"] { display: revert; }
+body.clerk-loaded[data-clerk="signed-out"] [data-auth-only="signed-out"] { display: revert; }
+
+[hidden] { display: none !important; }
+
+/* ─── Page wrap + nav ────────────────────────────────────── */
+
+.wrap {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.site-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 0 28px;
+  flex-wrap: wrap;
+}
+
+.site-nav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-nav .wordmark {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.site-nav .wordmark .accent {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--pink-shadow);
+  font-weight: 700;
+  font-size: 24px;
+  margin-left: 4px;
+}
+
+.bakery-nav-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: var(--dm-border);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.site-nav .links {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.bakery-nav-link {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+}
+
+.bakery-nav-link:hover { border-color: var(--ink); }
+
+.auth-btn-sign-in,
+.auth-btn-sign-out {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: var(--dm-border);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.auth-btn-sign-in:hover,
+.auth-btn-sign-out:hover { background: rgba(10, 10, 10, 0.05); }
+
+#user-button-mount { display: inline-flex; align-items: center; }
+
+/* ─── Page body ──────────────────────────────────────────── */
+
+.bakery-order-main {
+  padding: 16px 20px 96px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* ─── Hero ───────────────────────────────────────────────── */
+
+.bakery-order-hero { margin: 0 0 32px; }
+
+.eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.orders-hero__num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  background: var(--dm-accent-deep);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
+  display: inline-block;
+  transform: none;
+}
+
+.bakery-order-hero__title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4.5vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+  max-width: 22ch;
+  color: var(--ink);
+}
+
+.bakery-hero__sub {
+  color: var(--muted);
+  margin: 0;
+  font-size: 16px;
+  max-width: 52ch;
+}
+
+.bakery-hero__sub--caveat {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 24px;
+  color: var(--ink);
+  display: inline-block;
+  transform: none;
+}
+
+/* ─── Status pills ───────────────────────────────────────── */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: var(--dm-border);
+  background: #fff;
+  color: var(--ink);
+}
+
+.status-pill[data-status="pending"] {
+  background: #FFF5DB; color: #6E5118; border-color: #B8853A;
+}
+.status-pill[data-status="accepted"] {
+  background: #E0F4FF; color: #18496E; border-color: #3A7BB8;
+}
+.status-pill[data-status="in_production"] {
+  background: var(--dm-accent-deep); color: var(--ink); border-color: var(--ink);
+}
+.status-pill[data-status="ready"] {
+  background: #E8FFE0; color: #185118; border-color: #3AB85A;
+}
+.status-pill[data-status="in_transit"] {
+  background: #F0E0FF; color: #4F186E; border-color: #7B3AB8;
+}
+.status-pill[data-status="delivered"] {
+  background: var(--ink); color: var(--bg);
+}
+.status-pill[data-status="cancelled"],
+.status-pill[data-status="failed"] {
+  background: #FFE0E0; color: #6E1818; border-color: #B83A3A;
+}
+
+/* ─── Source badge (campaign / vc) ───────────────────────── */
+
+.source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+}
+
+.source-badge--campaign { background: #FFE6F1; }
+.source-badge--vc { background: #E0F4FF; }
+
+/* ─── Cards ──────────────────────────────────────────────── */
+
+.orders-card {
+  position: relative;
+  background: #fff;
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 28px 26px 24px;
+  margin: 0 0 24px;
+  box-shadow: var(--dm-sh-md);
+}
+
+.orders-card__h {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.005em;
+  margin: 0 0 18px;
+  color: var(--ink);
+  text-transform: none;
+}
+
+.orders-card__hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+
+/* ─── Cake-count chip in hero eyebrow ────────────────────── */
+
+.cake-count-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--bg);
+  border: var(--dm-border);
+}
+
+.cake-section-count {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Cakes table ────────────────────────────────────────── */
+
+.cakes-card { padding-bottom: 16px; }
+
+.cakes-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px dashed rgba(10, 10, 10, 0.25);
+  border-radius: 10px;
+}
+
+.cakes-empty p { margin: 4px 0; }
+
+.cakes-table { display: block; }
+
+.cakes-table__head { display: none; }
+
+.cakes-table__body {
+  display: grid;
+  gap: 18px;
+}
+
+.cakes-table__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px;
+  background: var(--paper);
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 12px;
+}
+
+.cakes-table__row:nth-child(2n) { background: #fff; }
+
+.cakes-table__col {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.cakes-table__col strong { display: block; font-weight: 700; }
+
+.cakes-table__col .quiet {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.cakes-table__col em.quiet {
+  font-style: italic;
+}
+
+.cakes-table__col[data-label]::before {
+  content: attr(data-label);
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.cakes-table__col--num {
+  background: var(--ink);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+}
+
+/* [data-label] matches the hider's specificity to the rule above that
+   prints the labels; bare .cakes-table__col--num::before loses to it and a
+   stray "#" renders inside the number pill. */
+.cakes-table__col--num[data-label]::before { display: none; }
+
+.cake-cell {
+  display: flex;
+  /* In the two-column order layout the card column can get very narrow.
+     When thumbs + text no longer fit side by side, the text drops below
+     the thumbs instead of overflowing into the Files column, where it
+     used to paint underneath the Download button. */
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Larger, slightly rotated polaroid-feel thumbnail so the cake design /
+   card art reads clearly on a desktop table row. Falls back to a smaller
+   square at narrow widths via the responsive rule below the table. */
+.cake-cell__thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 72px;
+  border: var(--dm-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  padding: 2px;
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.cake-cell__thumb:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-md);
+}
+
+/* Clickable print/card thumbs open a full-size preview. */
+.cake-cell__thumb.is-zoomable {
+  cursor: zoom-in;
+}
+.cake-cell__thumb.is-zoomable:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+/* PDF prints can't render as an <img> thumbnail; the thumb is a link
+   that opens the file in a new tab. */
+.cake-cell__thumb--pdf {
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cake-cell__pdf-badge {
+  font: 700 12px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Full-screen image preview (print / card) opened from a thumbnail. */
+.img-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 10, 10, 0.82);
+}
+.img-lightbox__dialog {
+  width: min(1120px, 100%);
+  /* Use the full padded viewport height so the contained print is as large as
+     possible while still fitting whole (no scroll). */
+  height: 100%;
+  display: grid;
+  /* minmax(0, 1fr) caps the image row's min size to 0; a plain 1fr keeps an
+     implicit min of auto (the image's intrinsic height), which lets tall/square
+     prints blow past the dialog and fill the screen. */
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  color: var(--ink);
+}
+.img-lightbox__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--paper);
+  border: var(--dm-border);
+  border-radius: 14px;
+  box-shadow: var(--dm-sh-md);
+  padding: 12px 16px;
+}
+.img-lightbox__title {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+}
+.img-lightbox__close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: var(--dm-border);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+.img-lightbox__body {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  /* Room for the image's pink drop shadow so it never clips. */
+  padding: 0 8px 8px 0;
+}
+.img-lightbox__image {
+  /* Scale the whole print down to fit the available area, never scroll. The
+     viewport-unit caps always resolve (percentage heights down the
+     fixed > grid > grid-item chain do not), so a tall/square print can never
+     run off-screen; object-fit keeps it centered and uncropped. The reserved
+     px cover the lightbox padding, header, gap, and shadow. */
+  width: auto;
+  height: auto;
+  max-width: min(100%, calc(100vw - 56px));
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  background: #fff;
+  border: var(--dm-border);
+  border-radius: 12px;
+  box-shadow: var(--dm-sh-md);
+}
+
+.cake-cell__thumb--square {
+  width: 72px;
+  height: 72px;
+}
+
+/* Round cake print: circular frame, image cropped/positioned within it so
+   the bakery sees exactly the circle the customer set. */
+.cake-cell__thumb--round {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  padding: 0;
+}
+/* Box card: 2:3 portrait frame matching the 4x6 card crop. */
+.cake-cell__thumb--card {
+  width: 52px;
+  height: 78px;
+  padding: 0;
+}
+
+/* Baked prints (already cropped customer-side) render whole. */
+.crop-flat {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Cropped-thumb render, mirroring the customer surface: the frame-sized
+   .crop-pan carries the saved transform; the img inside is the whole image at
+   cover size (real overflow, clipped by the thumb), so edge regions the
+   customer panned into the print render here too. */
+.crop-pan {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  pointer-events: none;
+}
+/* The default thumb keeps its 2px polaroid inset; round/card are flush. */
+.cake-cell__thumb .crop-pan { inset: 2px; }
+.cake-cell__thumb--round .crop-pan,
+.cake-cell__thumb--card .crop-pan { inset: 0; }
+.crop-pan > img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  transform: translate(-50%, -50%);
+  display: block;
+}
+
+.cake-cell__body {
+  min-width: 0;
+  /* The 120px basis is the wrap trigger: with less than ~120px left beside
+     the thumbs the body takes its own line (full column width) rather than
+     rendering one word per line. */
+  flex: 1 1 120px;
+}
+
+.cake-cell__msg {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink);
+  display: block;
+}
+
+.cake-cell__none {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
+/* Cake design text - the actual text printed on the cake */
+.cake-cell__design-text {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.cake-cell__design-text strong {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--pink-shadow);
+  display: inline !important;
+}
+
+/* Per-row download button */
+.cake-download-btn {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: var(--dm-border);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  white-space: nowrap;
+}
+
+.cake-download-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.cakes-table__col--actions { text-align: center; }
+
+/* Desktop: real table layout from 920px+ */
+@media (min-width: 920px) {
+  .cakes-table__head {
+    display: block;
+    margin: 0 0 12px;
+  }
+
+  .cakes-table__row {
+    grid-template-columns: 44px 1.2fr 1.7fr 1.3fr 110px;
+    align-items: start;
+    gap: 16px;
+    padding: 14px 16px;
+  }
+
+  /* The header has to be the SAME BOX as the rows it labels, or the columns
+     don't line up with their own contents. It used to declare `border: 0`
+     while every body row carries a 1px border, so the header's content box
+     was 2px wider and every column header sat a pixel off the column beneath
+     it - and the fractional tracks resolved to different widths (104.875 vs
+     104.297). A transparent border keeps the geometry identical. This rule
+     must stay AFTER `.cakes-table__row`: same specificity, so its tighter
+     vertical padding only survives if it comes last. */
+  .cakes-table__row--head {
+    background: transparent !important;
+    border: 1px solid transparent;
+    border-bottom: var(--dm-border);
+    border-radius: 0;
+    padding: 0 16px 8px;
+  }
+
+  .cakes-table__row--head .cakes-table__col {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* The "#" header is a label, not a cake number - it shouldn't wear the
+     numbered black pill the body rows use. */
+  .cakes-table__row--head .cakes-table__col--num {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .cakes-table__col[data-label]::before { display: none; }
+
+  .cakes-table__col--num {
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* Fill the track and right-align both. Head and body were each
+     shrink-wrapping to their own content and hanging off `justify-self: end`,
+     so "FILES" (32px wide) and "no files" / "Download" (45px+) started at
+     different x. Stretched, they share both edges. */
+  .cakes-table__col--actions {
+    align-self: center;
+    justify-self: stretch;
+    text-align: right;
+  }
+}
+
+/* ─── Per-cake upload blocks ─────────────────────────────── */
+
+.per-cake-uploads {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.per-cake-block {
+  background: var(--paper);
+  border: 1px solid rgba(10, 10, 10, 0.18);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.per-cake-block:nth-child(2n) { background: #fff; }
+
+.per-cake-block.is-failed {
+  background: rgba(204, 51, 51, 0.06);
+  border-color: rgba(204, 51, 51, 0.45);
+}
+
+.per-cake-block__failed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(204, 51, 51, 0.10);
+  border: 1px dashed rgba(204, 51, 51, 0.55);
+  border-radius: 10px;
+  color: #8a1c1c;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.per-cake-block__failed strong { white-space: nowrap; }
+
+.per-cake-block__foot {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-ghost-danger {
+  appearance: none;
+  background: transparent;
+  color: #8a1c1c;
+  border: 1px solid rgba(138, 28, 28, 0.45);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: 600 12px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.btn-ghost-danger:hover {
+  background: #8a1c1c;
+  color: #fff;
+}
+
+.btn-ghost-undo {
+  appearance: none;
+  background: transparent;
+  color: #4a4438;
+  border: 1px solid rgba(74, 68, 56, 0.45);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: 600 12px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.btn-ghost-undo:hover {
+  background: #4a4438;
+  color: #fff;
+}
+
+.per-cake-block__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  flex-wrap: wrap;
+}
+
+.per-cake-block__num {
+  background: var(--ink);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.per-cake-block__who {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.per-cake-block__who strong {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.per-cake-block__who .quiet {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.per-cake-block__cake {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 10px;
+  background: rgba(10, 10, 10, 0.04);
+  border-radius: 999px;
+}
+
+/* Upload preview thumbnail inside the drop zone, shown when uploaded */
+.upload-drop {
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-drop__preview {
+  margin-top: 8px;
+  max-width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--ink);
+}
+
+/* ─── Photo trail captions ───────────────────────────────── */
+
+.photo-trail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  padding: 8px 0 4px;
+}
+
+@media (min-width: 480px) {
+  .photo-trail {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 20px;
+  }
+}
+
+@media (min-width: 720px) {
+  .photo-trail { grid-template-columns: repeat(3, 1fr); }
+}
+
+.polaroid__caption {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* One line under a photo: whose cake it is. Fraunces (the brand's display
+   serif, already loaded on this page) rather than the UI sans - a caption
+   under a photograph is the one place on this page that isn't chrome. */
+.polaroid__who {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-optical-sizing: auto;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+/* ─── Receipt-style detail list ──────────────────────────── */
+
+.receipt { margin: 0; }
+
+.receipt > div {
+  padding: 14px 0;
+  border-bottom: 1px dashed rgba(10, 10, 10, 0.25);
+}
+
+.receipt > div:first-child { padding-top: 4px; }
+.receipt > div:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.receipt dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.receipt dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.receipt dd strong { display: block; font-weight: 700; }
+
+.receipt dd .mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.receipt dd.total {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  display: inline-block;
+}
+
+.receipt dd .quiet {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* ─── Recipients table (downloadable contact list) ───────── */
+
+.recipients-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.recipients-dl {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border: var(--dm-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.recipients-dl:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-sm);
+}
+.recipients-dl:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+.recipients-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recipients-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.recipients-table th,
+.recipients-table td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px dashed rgba(10, 10, 10, 0.18);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.recipients-table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.recipients-table td a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.recipients-cell--num {
+  width: 1%;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Collapsed: hide the overflow rows until "See more". */
+.recipients-table[data-collapsed="true"] .is-extra {
+  display: none;
+}
+
+.recipients-more {
+  margin-top: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.recipients-more:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+/* ─── Notes / design card ────────────────────────────────── */
+
+.design-card { font-family: 'Inter', system-ui, sans-serif; }
+
+.design-card__message {
+  position: relative;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  font-style: italic;
+  line-height: 1.3;
+  padding: 18px 22px;
+  background: var(--paper);
+  border: 1px dashed rgba(10, 10, 10, 0.25);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.design-card__message::before,
+.design-card__message::after {
+  position: absolute;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 60px;
+  line-height: 1;
+  color: var(--pink);
+  opacity: 0.6;
+}
+
+.design-card__message::before { content: '"'; top: 0; left: 6px; }
+.design-card__message::after  { content: '"'; bottom: -22px; right: 6px; }
+
+.design-card__no-message {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 15px;
+  padding: 8px 0;
+}
+
+/* Seed-deck "Open" button + its raw URL line. The button itself is a
+   .btn-secondary; this rule just spaces it from the message above and
+   from the URL preview below. */
+.design-card__file {
+  margin-top: 18px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.design-card__file > a.btn-secondary,
+.design-card__file > .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.design-card__file-url {
+  display: block;
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.design-card__file-url:hover { color: var(--pink-shadow); }
+
+/* QR plate — soft paper background, 96x96 preview tile, the destination
+   URL in a wavy-underline link, and a dark pill download button. */
+.design-card__qr {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--paper);
+  border: 1px dashed rgba(10, 10, 10, 0.25);
+  border-radius: 10px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.design-card__qr-img {
+  width: 96px;
+  height: 96px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.design-card__qr-img img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.design-card__qr-meta {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.design-card__qr-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.design-card__qr-url {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  color: var(--ink);
+  word-break: break-all;
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--pink);
+  text-underline-offset: 3px;
+}
+
+.design-card__qr-url:hover { color: var(--pink); }
+
+.design-card__qr-download {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bg);
+  border: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--dm-sh-sm);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.design-card__qr-download:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.design-card__qr-download[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+  transform: none;
+  box-shadow: var(--dm-sh-sm);
+}
+
+/* ─── Action card ────────────────────────────────────────────
+   Still the VC order page's "Next step" card (bakery-vc-order.html), where
+   the card does carry buttons of its own. The assignment page dropped it -
+   see .order-flash below. */
+
+.action-card { background: linear-gradient(135deg, var(--paper), #fff); }
+
+.action-card__hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.action-card__btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-card__result {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #E8FFE0;
+  border: 1px solid #3AB85A;
+  color: #185118;
+}
+
+.action-card__result.is-error {
+  background: #FFE0E0;
+  border-color: #B83A3A;
+  color: #6E1818;
+}
+
+/* ─── Status flash (assignment page) ─────────────────────────
+   All that's left of the assignment page's "Next step" card: the line that
+   reports what just happened. The rest was a bordered card whose title and
+   hint only ever restated the card directly below it. */
+
+.order-flash {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #E8FFE0;
+  border: 1px solid #3AB85A;
+  color: #185118;
+}
+
+.order-flash[hidden] { display: none; }
+
+.order-flash.is-error {
+  background: #FFE0E0;
+  border-color: #B83A3A;
+  color: #6E1818;
+}
+
+/* ─── Two-up order detail grid (VC + assignment) ─────────── */
+
+.bakery-order-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+  margin: 0 0 24px;
+}
+
+@media (min-width: 720px) {
+  .bakery-order-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Insert-card action row ─────────────────────────────── */
+
+.insert-card__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* ─── Action buttons (pill-shaped) ───────────────────────── */
+
+.btn-action {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-action--accept {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+}
+
+.btn-action--accept:hover:not([disabled]) {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.btn-action--ghost {
+  background: transparent;
+  border: var(--dm-border);
+  color: var(--ink);
+}
+
+.btn-action--ghost:hover:not([disabled]) {
+  background: rgba(10, 10, 10, 0.05);
+}
+
+.btn-action--decline {
+  background: transparent;
+  border: 1.5px solid #B83A3A;
+  color: #6E1818;
+}
+
+.btn-action--decline:hover:not([disabled]) {
+  background: rgba(184, 58, 58, 0.06);
+}
+
+.btn-action--cancel {
+  background: transparent;
+  border: 1.5px dashed rgba(10, 10, 10, 0.35);
+  color: var(--muted);
+}
+
+.btn-action--cancel:hover:not([disabled]) {
+  border-color: #B83A3A;
+  color: #6E1818;
+  background: rgba(184, 58, 58, 0.04);
+}
+
+.btn-action--done {
+  background: #185118;
+  color: #fff;
+  border: 0;
+  padding: 14px 28px;
+  font-size: 15px;
+  box-shadow: var(--dm-sh-md);
+}
+
+.btn-action--done:not([disabled]):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.btn-action--done[disabled] {
+  background: rgba(10, 10, 10, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-action[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─── Upload card ────────────────────────────────────────── */
+
+.upload-card { background: #FFFBF1; }
+
+.upload-card__hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.upload-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .upload-pair { grid-template-columns: 1fr; }
+}
+
+/* Top-aligned, not centred. The two tiles in a pair are the same grid row, so
+   one of them growing (a preview thumbnail lands in it) used to push the other
+   one's label to a different height and the pair stopped reading as a pair.
+   The icons were hiding some of that; without them it's plain. */
+.upload-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 8px;
+  padding: 28px 16px;
+  background: #fff;
+  border: 2px dashed rgba(10, 10, 10, 0.28);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.upload-drop:hover,
+.upload-drop.is-dragover {
+  border-color: var(--pink);
+  background: rgba(255, 45, 45, 0.04);
+}
+
+/* No .upload-drop__icon rule: the 🎂 / 📍 glyphs that used to sit on top of
+   these tiles are gone from both the assignment page and the VC order page.
+   The tile is its label, its hint, and its state. */
+
+.upload-drop__text {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.upload-drop__sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Squircle, not a pill. The superellipse corner (`corner-shape`) is the real
+   thing where the browser has it; everywhere else the radius alone lands on a
+   soft rounded rect, which is the same silhouette a step coarser. Both states
+   share the geometry so REQUIRED and UPLOADED are the same badge in two
+   colours rather than two shapes. */
+.upload-drop__status {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 5px 11px;
+  border-radius: 11px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(255, 45, 45, 0.1);
+  color: var(--pink);
+  border: 1px dashed rgba(255, 45, 45, 0.4);
+}
+
+@supports (corner-shape: squircle) {
+  .upload-drop__status {
+    corner-shape: squircle;
+    border-radius: 14px;
+  }
+}
+
+.upload-drop.is-done {
+  border-color: #1f8a3a;
+  background: rgba(31, 138, 58, 0.06);
+}
+
+.upload-drop.is-done .upload-drop__status {
+  background: rgba(31, 138, 58, 0.12);
+  border-color: rgba(31, 138, 58, 0.4);
+  color: #155a23;
+}
+
+/* Upload progress + Done button area */
+
+.upload-progress { margin-top: 14px; }
+
+.upload-progress__bar {
+  height: 6px;
+  background: rgba(10, 10, 10, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.upload-progress__bar span {
+  display: block;
+  height: 100%;
+  width: 30%;
+  border-radius: 999px;
+  background-image: linear-gradient(90deg, var(--pink), var(--pink-shadow), var(--pink));
+  background-size: 200% 100%;
+  animation: upload-stripe 1.4s linear infinite;
+}
+
+@keyframes upload-stripe {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.upload-progress__label {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.upload-done {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.upload-done__hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ─── Polaroids ──────────────────────────────────────────── */
+
+.polaroid-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  padding: 8px 0 4px;
+}
+
+@media (min-width: 480px) {
+  .polaroid-stack { grid-template-columns: 1fr 1fr; gap: 32px 20px; }
+}
+
+.polaroid {
+  position: relative;
+  background: #fff;
+  padding: 12px 12px 0;
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  box-shadow: var(--dm-sh-md);
+  transform: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  margin: 0;
+}
+
+.polaroid:nth-child(2n) { transform: none; }
+
+.polaroid:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.polaroid:nth-child(2n):hover {
+  transform: translateY(-2px);
+}
+
+.polaroid__frame {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.polaroid__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.polaroid__caption {
+  font-family: 'Inter', system-ui, sans-serif;
+  text-align: center;
+  padding: 12px 8px 16px;
+  font-size: 17px;
+  color: var(--ink);
+  line-height: 1.2;
+  margin: 0;
+  transform: none;
+}
+
+/* ─── Diary (timeline) ───────────────────────────────────── */
+
+.diary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.diary li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  padding: 14px 4px;
+  border-bottom: 1px dashed rgba(10, 10, 10, 0.12);
+  align-items: flex-start;
+}
+
+/* The VC order page still puts an emoji in each dot (vc-order/render.js), and
+   it loads this same stylesheet - so the plain-dot treatment below is opt-in
+   per list, not a blanket restyle of .diary. */
+.diary--plain li {
+  grid-template-columns: 10px 1fr;
+  padding: 12px 4px;
+}
+
+.diary li:last-child { border-bottom: 0; }
+
+.diary li:first-child {
+  background: linear-gradient(to right, rgba(255, 45, 45, 0.06), transparent 60%);
+  border-radius: 6px;
+  padding-left: 8px;
+}
+
+/* Emoji bubble - still what the VC order page renders. */
+.diary__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #fff;
+  border: var(--dm-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.diary li:first-child .diary__dot {
+  background: var(--dm-accent-deep);
+  border-color: var(--pink);
+  color: #fff;
+}
+
+/* A timeline marker, not a picture. The assignment page's History used to be
+   a 28px bubble holding an emoji per row (📥 👋 📸 📍 🎁), which said nothing
+   the label beside it didn't and rendered differently on every OS. */
+.diary--plain .diary__dot {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(10, 10, 10, 0.28);
+  box-sizing: border-box;
+  display: block;
+  margin-top: 6px;
+}
+
+.diary--plain li:first-child .diary__dot {
+  background: var(--dm-accent-deep);
+  border-color: var(--dm-accent-deep);
+}
+
+.diary__body { min-width: 0; }
+
+.diary__msg {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.diary__time {
+  display: block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.diary__loading {
+  padding: 14px 4px;
+  color: var(--muted);
+  font-style: italic;
+  border-bottom: 0;
+  display: block;
+}
+
+/* ─── Skeleton loaders ───────────────────────────────────── */
+
+.orders-skel {
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 10, 10, 0.06),
+    rgba(10, 10, 10, 0.14),
+    rgba(10, 10, 10, 0.06)
+  );
+  background-size: 200% 100%;
+  animation: orders-skel 1.4s ease-in-out infinite;
+}
+
+.orders-skel + .orders-skel { margin-top: 12px; }
+
+@keyframes orders-skel {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Auth gate (signed-out) ─────────────────────────────── */
+
+.auth-gate { text-align: center; }
+
+.auth-gate__body {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.auth-gate__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-primary, .btn-secondary {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: var(--dm-sh-sm);
+  transform: none;
+}
+
+.btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--dm-sh-md);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: var(--dm-border);
+  color: var(--ink);
+}
+
+.btn-secondary:hover { background: rgba(10, 10, 10, 0.05); }
+
+/* ─── Error card ─────────────────────────────────────────── */
+
+.error-card {
+  border-color: #B83A3A;
+  background: #FFF8F8;
+  box-shadow: var(--dm-sh-md);
+}
+
+.error-card .orders-card__h { color: #6E1818; }
+
+.error-card__hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 8px 0 18px;
+}
+
+.error-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ─── Footer ─────────────────────────────────────────────── */
+
+.orders-foot {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.orders-foot__caveat {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0;
+  transform: none;
+  display: inline-block;
+}
+
+.orders-foot__id {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  margin: 6px 0 0;
+  opacity: 0.5;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Decline modal ──────────────────────────────────────── */
+
+.modal-shell {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+  animation: modal-fade 220ms ease-out;
+}
+
+.modal-shell[hidden] { display: none !important; }
+
+.modal-card {
+  position: relative;
+  background: #fff;
+  border: var(--dm-border);
+  border-radius: 14px;
+  padding: 28px 26px 24px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--dm-sh-md);
+  transform: none;
+  animation: modal-pop 320ms cubic-bezier(.16, 1.18, .34, 1.04);
+}
+
+.modal-card__body {
+  color: var(--muted);
+  margin: 8px 0 16px;
+  font-size: 14px;
+}
+
+.modal-card__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.modal-card textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: var(--dm-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.modal-card textarea:focus {
+  outline: 2px dashed var(--pink);
+  outline-offset: 2px;
+}
+
+.modal-card__btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes modal-pop {
+  0%   { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Delivery date ──────────────────────────────────────────
+   ONE card, two states. Settled reads as a fact (the date, plus a quiet
+   "Change"); unset reads as the page's single question. */
+
+.delivery-date-card { background: #FFFBF1; }
+
+/* The heading only earns a bottom margin when a paragraph follows it; in the
+   settled state the date sits right underneath. */
+.delivery-date-card .dd-h { margin-bottom: 10px; }
+
+.dd-settled {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.dd-settled[hidden] { display: none; }
+
+.dd-settled__date {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dd-change {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dm-accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dd-change:hover { color: var(--ink); }
+
+.dd-editor[hidden] { display: none; }
+
+.dd-hint { margin-bottom: 0; }
+
+.delivery-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.dd-input {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  padding: 11px 14px;
+  border: var(--dm-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+
+/* The native field prints the browser's locale (27.07.2026 on a Norwegian
+   machine) on an otherwise English page. This says the same day back in the
+   page's own format. */
+.dd-echo {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dd-echo[hidden] { display: none; }
+
+/* Match the "Send invoice / payment link" CTA from the dashboard hero
+   (.btn-invoice in bakery.css): pink fill, white text, ink border, stamped
+   ink shadow. Replicated here because the assignment page loads orders.css,
+   not bakery.css. */
+.delivery-date-card .btn-action {
+  background: var(--dm-accent-deep);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 11px 22px;
+  border: var(--dm-border);
+  border-radius: 10px;
+  box-shadow: var(--dm-sh-md);
+}
+
+.delivery-date-card .btn-action:hover:not([disabled]) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-md);
+  color: #FFFFFF;
+}
+
+.delivery-date-card .btn-action:active:not([disabled]) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.delivery-date-result {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: #185118;
+}
+
+.delivery-date-result.is-error { color: #6E1818; }
+
+/* ─── Reduced motion ─────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ─── Production tickets (print) ─────────────────────────────
+   "Is there a way to print the order to give to the production team?"
+   A button in the cakes card builds one docket per cake into
+   #ticket-print-host (bakery-assignment.js); the @media print block below
+   hides the rest of the page and prints the tickets one-per-page. Mirrors
+   the insert-card print pattern in bakery.css. */
+
+.cakes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+/* Same look as the "Send invoice / payment link" CTA (.btn-invoice in
+   bakery.css): pink fill, white text, 2px ink border, stamped ink shadow.
+   Replicated here because the assignment page loads orders.css, not
+   bakery.css. */
+.btn-print-ticket {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dm-accent-deep);
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  padding: 11px 22px;
+  border-radius: 10px;
+  border: var(--dm-border);
+  box-shadow: var(--dm-sh-md);
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.btn-print-ticket:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--dm-sh-md);
+  color: #FFFFFF;
+}
+
+.btn-print-ticket:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--dm-sh-sm);
+}
+
+.btn-print-ticket:focus-visible {
+  outline: 2px dashed var(--ink);
+  outline-offset: 3px;
+}
+
+.btn-print-ticket__icon { font-size: 16px; line-height: 1; }
+
+.cakes-toolbar__hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The print host never shows on screen - only via the @media print rule. */
+.ticket-print-host { display: none; }
+
+@media print {
+  /* Reveal only the tickets; hide the live page (header / main / modals). */
+  body.is-printing-tickets > *:not(.ticket-print-host) { display: none !important; }
+  body.is-printing-tickets .ticket-print-host { display: block !important; }
+
+  @page { margin: 14mm; }
+
+  .ticket-print-host {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #000;
+  }
+
+  /* One docket per page. */
+  .ticket {
+    page-break-after: always;
+    break-after: page;
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-sizing: border-box;
+  }
+  .ticket:last-child { page-break-after: auto; break-after: auto; }
+
+  .ticket__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+  .ticket__kicker {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .ticket__order { margin: 3px 0 0; font-size: 14px; font-weight: 600; }
+  .ticket__head-r { font-size: 16px; font-weight: 800; white-space: nowrap; }
+
+  .ticket__sec { margin: 0 0 14px; }
+  .ticket__sec-h {
+    margin: 0 0 7px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #999;
+    padding-bottom: 3px;
+  }
+
+  .ticket__cake-label { margin: 0 0 8px; font-size: 15px; }
+  .ticket__oncake {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border: 1.5px solid #000;
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin: 0 0 8px;
+  }
+  .ticket__oncake-lbl {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .ticket__oncake-txt { font-size: 20px; font-weight: 800; line-height: 1.2; }
+
+  .ticket__notes,
+  .ticket__addr,
+  .ticket__deliver-by,
+  .ticket__contact,
+  .ticket__recipient,
+  .ticket__card-msg,
+  .ticket__muted,
+  .ticket__special p {
+    margin: 0 0 5px;
+    font-size: 13px;
+  }
+  .ticket__recipient { font-size: 15px; }
+  .ticket__deliver-by { font-size: 14px; }
+  .ticket__muted { color: #555; }
+  .ticket__card-msg { font-style: italic; }
+
+  .ticket__art {
+    margin-top: 8px;
+    width: 64mm;
+    height: 64mm;
+    border: 1px solid #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ticket__art img,
+  .ticket__art canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .ticket__art--round { border-radius: 50%; }
+
+  /* Card front + Daymaker back, side by side, so the kitchen sees both
+     faces of the thing they're printing on one docket. Narrower than a
+     lone .ticket__art so the pair still fits an A4 column. */
+  .ticket__card-sides {
+    display: flex;
+    gap: 6mm;
+    flex-wrap: wrap;
+  }
+  .ticket__card-sides .ticket__art {
+    width: 48mm;
+    height: 48mm;
+  }
+  .ticket__card-side-lbl {
+    margin: 8px 0 0;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #555;
+  }
+  .ticket__card-side .ticket__art { margin-top: 3px; }
+  /* PDF prints can't render inline; the ticket points at the downloaded file. */
+  .ticket__art-pdf {
+    padding: 8px;
+    text-align: center;
+    font: 700 11px/1.4 'Inter', system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    color: #555;
+  }
+
+  .ticket__foot {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #999;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  /* Print borders + design images faithfully, not washed out. */
+  .ticket-print-host,
+  .ticket-print-host * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ─── Insert card (VC orders) ────────────────────────────────
+   The printable QR card that ships inside a VC cake box. These rules used to
+   live only in bakery.css, which the order page does not load - so when the
+   VC order page became this page, the card rendered as unstyled text and a
+   full-width QR. Copied here because orders.css is the stylesheet the order
+   page actually loads. */
+/* Insert-card (printable slip — used by the JS card-download path) */
+.insert-card {
+  width: 420px;
+  padding: 28px;
+  background: #fffdf6;
+  border: 2px solid #2a2826;
+  border-radius: 12px;
+  font-family: 'Fraunces', Georgia, serif;
+  text-align: center;
+  color: #2a2826;
+}
+.insert-card__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+/* Logo art (coldcaked wordmark + bakery mark). Matches the original
+   coldcaked treatment — wordmarks rendered side-by-side with a thin
+   typographic × between them, capped width so a wide bakery wordmark
+   doesn't break the row. */
+.insert-card__logo {
+  display: block;
+  height: 26px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+.insert-card__logo--bakery { height: 32px; }
+.insert-card__brand-word {
+  /* Legacy fallback if a card still uses the text version. */
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.insert-card__brand-x {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1;
+  color: rgba(10, 10, 10, 0.55);
+  opacity: 1;
+}
+.insert-card__greeting {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+.insert-card__msg {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #555;
+  font-family: 'Inter', sans-serif;
+}
+.insert-card__qr {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.insert-card__qr img {
+  width: 220px;
+  height: 220px;
+  border: 1px solid #2a2826;
+}
+.insert-card__signoff {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  margin: 0;
+}
+/* The insert card is not a section on the page - it lives under "Card" in the
+   cakes table like every other card, and this host only exists to be printed
+   or rasterised. Parked off-screen rather than display:none, because
+   html2canvas needs real layout to render "Download PNG". */
+.insert-card-print-host {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 420px;
+}
+
+@media print {
+  body.is-printing-insert > *:not(.insert-card-print-host) {
+    display: none !important;
+  }
+  body.is-printing-insert .insert-card-print-host {
+    position: static !important;
+    left: auto !important;
+    display: block !important;
+    margin: 0;
+  }
+}
+

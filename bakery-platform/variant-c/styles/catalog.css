@@ -1,0 +1,164 @@
+/* Variant C "Tidsskrift" storefront styles. Loads after theme.css. */
+
+/* Masthead */
+.masthead { padding-top: 18px; }
+.masthead-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.masthead-kicker { margin-bottom: 0; }
+.cart-link {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.cart-link:hover { color: var(--accent); text-decoration: none; }
+.cart-badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+}
+.masthead-title { text-align: center; margin: 18px 0 14px; }
+.masthead-rule { margin: 0; }
+
+/* Hero: description + pickup info */
+.hero { display: grid; gap: 24px; padding: 26px 0 4px; }
+.hero-text {
+  font-family: var(--font-head);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.hero-info { border-top: 1px solid var(--line); padding-top: 16px; }
+.hero-info-title { font-size: 1.05rem; margin-bottom: 10px; }
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.92rem;
+  margin-bottom: 7px;
+}
+.info-term {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.info-value { text-align: right; }
+.leader {
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 1px dotted var(--line);
+  transform: translateY(-4px);
+}
+
+/* Category index */
+.cat-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: 18px;
+}
+.cat-nav-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 26px;
+  margin: 0;
+  padding: 10px 0;
+}
+.cat-nav-link {
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.cat-nav-link:hover { color: var(--accent); text-decoration: none; }
+.cat-num { color: var(--accent); font-family: var(--font-head); margin-right: 2px; }
+
+/* Menu sections */
+.menu-section { padding: 34px 0 4px; scroll-margin-top: 64px; }
+.menu-head h2 { margin-bottom: 0; }
+.menu-head .rule { margin: 10px 0 0; }
+
+.menu-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 14px;
+  align-items: start;
+  margin: 0 -10px;
+  padding: 16px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  transition: background 0.15s ease;
+}
+.menu-row:hover { background: var(--surface); text-decoration: none; }
+.menu-row:hover .menu-name { color: var(--accent); }
+.menu-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.menu-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.menu-body { min-width: 0; }
+.menu-line { display: flex; align-items: baseline; gap: 10px; }
+.menu-name { min-width: 0; margin: 0; font-size: 1.15rem; transition: color 0.15s ease; }
+.menu-price { white-space: nowrap; color: var(--ink); }
+.menu-desc {
+  margin: 4px 0 6px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menu-lead {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.menu-lead-today { color: var(--ok); }
+
+/* Loading / error / empty */
+.status { padding: 48px 0; text-align: center; color: var(--ink-soft); }
+.status-msg { color: var(--ink); }
+.status .btn { margin-top: 14px; }
+
+/* Footer */
+.site-footer { margin-top: 48px; border-top: 2px solid var(--ink); background: var(--surface); }
+.site-footer .container { padding-top: 30px; padding-bottom: 30px; }
+.footer-grid { display: grid; gap: 22px; }
+.footer-value { margin: 0; font-size: 0.95rem; }
+.footer-name { margin: 26px 0 0; font-family: var(--font-head); font-size: 1.1rem; color: var(--ink-soft); }
+
+/* Wider screens */
+@media (min-width: 680px) {
+  .hero { grid-template-columns: 1.6fr 1fr; gap: 40px; }
+  .hero-info { border-top: 0; border-left: 1px solid var(--line); padding: 0 0 0 32px; }
+  .menu-row { grid-template-columns: 84px 1fr; gap: 20px; }
+  .menu-img { width: 84px; height: 84px; }
+  .footer-grid { grid-template-columns: repeat(3, 1fr); }
+}

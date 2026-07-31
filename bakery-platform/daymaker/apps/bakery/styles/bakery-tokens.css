@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   BAKERY SURFACE TOKENS
+
+   Reads the shared ramp from /styles/dm-tokens.css and re-points the
+   legacy marketing variables at it. That re-pointing is the whole trick:
+   ~4,500 lines of bakery CSS already read from --ink / --muted / --pink /
+   --bg / --paper, so aliasing them moves the entire surface at once
+   instead of one rule at a time. Do NOT "clean up" the aliases.
+
+   Everything is scoped to `body.bakery-scope`, which every bakery page
+   now sets. The qualifier is what beats /styles/responsive.css, which
+   loads after these files and otherwise forces `.btn-primary { width:
+   100% }` and table-to-block conversions on phones. (Same lesson as
+   admin-tokens.css and body.admin-scope.)
+
+   The bakery is a kitchen tool: read on a phone, standing up, before
+   opening. Quiet is the default here even more than on /customer — the
+   loud register survives on exactly two screens, the application door and
+   the approval payoff, both opted into with `.dm-moment`.
+   ══════════════════════════════════════════════════════════════════════ */
+
+body.bakery-scope {
+  /* ── Aliases: legacy name → shared ramp ── */
+  --ink: var(--dm-g1000);
+  --muted: var(--dm-g800);
+  --bg: var(--dm-surface);
+  --white: var(--dm-surface);
+  --paper: var(--dm-surface-2);
+  --pink: var(--dm-accent);
+  --pink-shadow: var(--dm-accent-deep);
+  --border: var(--dm-g300);
+  --rule: var(--dm-g200);
+  --hairline: var(--dm-g300);
+
+  /* Chat panel (shared with /customer) reads these with fallbacks.
+     Naming them here is what moves the bakery's own message bubble off
+     the 3.71:1 white-on-#FF2D2D it has always used. */
+  --dm-chat-self-bg: var(--dm-accent-deep);
+  --dm-chat-self-fg: #fff;
+
+  --page-gutter: max(16px, min(4vw, 40px));
+
+  background: var(--dm-surface);
+  color: var(--dm-g1000);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  /* The dotted paper texture from main.css belongs on marketing pages,
+     not behind a work queue. */
+  background-image: none;
+}
+
+/* Money and counts are compared down a column — always tabular. */
+body.bakery-scope :is(
+  .kpi__v, .row__amt, .queue-row__amt, .stat-card__value,
+  .receipt__v, .detail-row__value, .order-card__payout,
+  .sum__v, .price-cell, .in--num, .cake-prices__row input,
+  .cake-prices__customer
+) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One focus treatment, a ring rather than an offset shadow that reads as
+   the same decoration as a resting card. */
+body.bakery-scope :focus { outline: none; }
+body.bakery-scope :focus-visible {
+  outline: none;
+  box-shadow: var(--dm-focus);
+  border-radius: var(--dm-r-sm);
+}
+
+/* ── Reduced motion: the queue polls, so nothing should be animating for
+   its own sake anyway. Kill what's left. ── */
+@media (prefers-reduced-motion: reduce) {
+  body.bakery-scope *,
+  body.bakery-scope *::before,
+  body.bakery-scope *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

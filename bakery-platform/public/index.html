@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bakery platform: variant comparison</title>
+<style>
+  :root {
+    --ink: #1c1c1c; --soft: #6b6b6b; --line: #e6e2da; --bg: #faf9f6;
+    --accent: #b4550f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         line-height: 1.55; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  .sub { color: var(--soft); margin: 0 0 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .variant { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .variant h2 { font-size: 1.05rem; margin: 0 0 2px; }
+  .dir { font-size: 0.85rem; color: var(--soft); margin: 0 0 12px; }
+  .pages { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pages a { display: inline-block; font-size: 0.88rem; padding: 6px 12px;
+             border: 1px solid var(--line); border-radius: 999px; color: var(--ink);
+             text-decoration: none; background: #fff; }
+  .pages a:hover { border-color: var(--accent); color: var(--accent); }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+            margin-right: 7px; vertical-align: baseline; }
+  .docs { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line);
+          font-size: 0.9rem; color: var(--soft); }
+  .docs code { background: #f0ede7; padding: 1px 6px; border-radius: 4px; }
+  .strip { display: flex; gap: 6px; margin-top: 12px; }
+  .strip a { flex: 1; min-width: 0; display: block; border: 1px solid var(--line);
+             border-radius: 6px; overflow: hidden; background: #fff; }
+  .strip img { display: block; width: 100%; height: 74px; object-fit: cover;
+               object-position: top; }
+  .strip a:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bakery platform: five variants</h1>
+  <p class="sub">One shared core (API, database, seed data), five independent front-end takes.
+     Open the same page across variants to compare, then cherry-pick winners.</p>
+
+  <div class="variant" style="margin-bottom:16px; border-width:2px; border-color:#111;">
+    <h2><span class="swatch" style="background:#ff2d2d"></span>App · Daymaker System (canonical)</h2>
+    <p class="dir">The assembled final app: daymaker.com's language (white/ink/pink, Inter, Bricolage Grotesque, Fraunces) rendered systematic and flat - no playful layer.</p>
+    <div class="pages">
+      <a href="/app/index.html">Butikk</a>
+      <a href="/app/product.html?id=1">Produkt</a>
+      <a href="/app/cart.html">Kurv</a>
+      <a href="/app/bakery">Ordredashboard</a>
+      <a href="/app/admin.html">Produktadmin</a>
+    </div>
+    <p class="dir" style="margin-top:10px;">Ordresystemet er Daymakers bakeridashbord (samme kode, kjørt mot plattformens ordre): kø, ordredetalj, bildeopplasting og fullføring. Produktadmin beholdes separat.</p>
+    <div class="strip">
+      <a href="/shots/app/storefront.jpg"><img src="/shots/app/storefront.jpg" alt="app storefront" loading="lazy"></a>
+      <a href="/shots/app/product.jpg"><img src="/shots/app/product.jpg" alt="app product" loading="lazy"></a>
+      <a href="/shots/app/cart.jpg"><img src="/shots/app/cart.jpg" alt="app cart" loading="lazy"></a>
+      <a href="/shots/app/checkout.jpg"><img src="/shots/app/checkout.jpg" alt="app checkout" loading="lazy"></a>
+      <a href="/shots/app/admin.jpg"><img src="/shots/app/admin.jpg" alt="app admin" loading="lazy"></a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="variant">
+      <h2><span class="swatch" style="background:#c2571b"></span>Variant A · Håndverk</h2>
+      <p class="dir">Warm and rustic: cream, espresso, terracotta, serif headings.</p>
+      <div class="pages">
+        <a href="/variant-a/index.html">Butikk</a>
+        <a href="/variant-a/product.html?id=1">Produkt</a>
+        <a href="/variant-a/cart.html">Kurv</a>
+        <a href="/variant-a/admin.html">Admin</a>
+      </div>
+      <div class="strip">
+        <a href="/shots/variant-a/storefront.jpg"><img src="/shots/variant-a/storefront.jpg" alt="variant-a storefront" loading="lazy"></a>
+        <a href="/shots/variant-a/product.jpg"><img src="/shots/variant-a/product.jpg" alt="variant-a product" loading="lazy"></a>
+        <a href="/shots/variant-a/cart.jpg"><img src="/shots/variant-a/cart.jpg" alt="variant-a cart" loading="lazy"></a>
+        <a href="/shots/variant-a/checkout.jpg"><img src="/shots/variant-a/checkout.jpg" alt="variant-a checkout" loading="lazy"></a>
+        <a href="/shots/variant-a/admin.jpg"><img src="/shots/variant-a/admin.jpg" alt="variant-a admin" loading="lazy"></a>
+      </div>
+    </div>
+    <div class="variant">
+      <h2><span class="swatch" style="background:#e63312"></span>Variant B · Stram</h2>
+      <p class="dir">Stark minimal: white, hairlines, square corners, one signal red.</p>
+      <div class="pages">
+        <a href="/variant-b/index.html">Butikk</a>
+        <a href="/variant-b/product.html?id=1">Produkt</a>
+        <a href="/variant-b/cart.html">Kurv</a>
+        <a href="/variant-b/admin.html">Admin</a>
+      </div>
+      <div class="strip">
+        <a href="/shots/variant-b/storefront.jpg"><img src="/shots/variant-b/storefront.jpg" alt="variant-b storefront" loading="lazy"></a>
+        <a href="/shots/variant-b/product.jpg"><img src="/shots/variant-b/product.jpg" alt="variant-b product" loading="lazy"></a>
+        <a href="/shots/variant-b/cart.jpg"><img src="/shots/variant-b/cart.jpg" alt="variant-b cart" loading="lazy"></a>
+        <a href="/shots/variant-b/checkout.jpg"><img src="/shots/variant-b/checkout.jpg" alt="variant-b checkout" loading="lazy"></a>
+        <a href="/shots/variant-b/admin.jpg"><img src="/shots/variant-b/admin.jpg" alt="variant-b admin" loading="lazy"></a>
+      </div>
+    </div>
+    <div class="variant">
+      <h2><span class="swatch" style="background:#7a1f2b"></span>Variant C · Tidsskrift</h2>
+      <p class="dir">Editorial: big serif headlines, thin rules, menu-style lists, bordeaux.</p>
+      <div class="pages">
+        <a href="/variant-c/index.html">Butikk</a>
+        <a href="/variant-c/product.html?id=1">Produkt</a>
+        <a href="/variant-c/cart.html">Kurv</a>
+        <a href="/variant-c/admin.html">Admin</a>
+      </div>
+      <div class="strip">
+        <a href="/shots/variant-c/storefront.jpg"><img src="/shots/variant-c/storefront.jpg" alt="variant-c storefront" loading="lazy"></a>
+        <a href="/shots/variant-c/product.jpg"><img src="/shots/variant-c/product.jpg" alt="variant-c product" loading="lazy"></a>
+        <a href="/shots/variant-c/cart.jpg"><img src="/shots/variant-c/cart.jpg" alt="variant-c cart" loading="lazy"></a>
+        <a href="/shots/variant-c/checkout.jpg"><img src="/shots/variant-c/checkout.jpg" alt="variant-c checkout" loading="lazy"></a>
+        <a href="/shots/variant-c/admin.jpg"><img src="/shots/variant-c/admin.jpg" alt="variant-c admin" loading="lazy"></a>
+      </div>
+    </div>
+    <div class="variant">
+      <h2><span class="swatch" style="background:#e0457b"></span>Variant D · Lekent</h2>
+      <p class="dir">Playful: blush background, big rounded corners, raspberry, chunky buttons.</p>
+      <div class="pages">
+        <a href="/variant-d/index.html">Butikk</a>
+        <a href="/variant-d/product.html?id=1">Produkt</a>
+        <a href="/variant-d/cart.html">Kurv</a>
+        <a href="/variant-d/admin.html">Admin</a>
+      </div>
+      <div class="strip">
+        <a href="/shots/variant-d/storefront.jpg"><img src="/shots/variant-d/storefront.jpg" alt="variant-d storefront" loading="lazy"></a>
+        <a href="/shots/variant-d/product.jpg"><img src="/shots/variant-d/product.jpg" alt="variant-d product" loading="lazy"></a>
+        <a href="/shots/variant-d/cart.jpg"><img src="/shots/variant-d/cart.jpg" alt="variant-d cart" loading="lazy"></a>
+        <a href="/shots/variant-d/checkout.jpg"><img src="/shots/variant-d/checkout.jpg" alt="variant-d checkout" loading="lazy"></a>
+        <a href="/shots/variant-d/admin.jpg"><img src="/shots/variant-d/admin.jpg" alt="variant-d admin" loading="lazy"></a>
+      </div>
+    </div>
+    <div class="variant">
+      <h2><span class="swatch" style="background:#1d5d9b"></span>Variant E · Nordisk</h2>
+      <p class="dir">Classic Nordic: cool gray, white cards, fjord blue, quiet and functional.</p>
+      <div class="pages">
+        <a href="/variant-e/index.html">Butikk</a>
+        <a href="/variant-e/product.html?id=1">Produkt</a>
+        <a href="/variant-e/cart.html">Kurv</a>
+        <a href="/variant-e/admin.html">Admin</a>
+      </div>
+      <div class="strip">
+        <a href="/shots/variant-e/storefront.jpg"><img src="/shots/variant-e/storefront.jpg" alt="variant-e storefront" loading="lazy"></a>
+        <a href="/shots/variant-e/product.jpg"><img src="/shots/variant-e/product.jpg" alt="variant-e product" loading="lazy"></a>
+        <a href="/shots/variant-e/cart.jpg"><img src="/shots/variant-e/cart.jpg" alt="variant-e cart" loading="lazy"></a>
+        <a href="/shots/variant-e/checkout.jpg"><img src="/shots/variant-e/checkout.jpg" alt="variant-e checkout" loading="lazy"></a>
+        <a href="/shots/variant-e/admin.jpg"><img src="/shots/variant-e/admin.jpg" alt="variant-e admin" loading="lazy"></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="docs">
+    Docs in the repo: <code>bakery-platform/docs/research.md</code> (Step 0 findings),
+    <code>docs/variants.md</code> (comparison notes), <code>docs/decisions.md</code>
+    (decision log), <code>README.md</code> (setup, stack rationale, domain model).
+  </div>
+</div>
+</body>
+</html>

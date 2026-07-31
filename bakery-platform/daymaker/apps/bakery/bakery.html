@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Queue · Daymaker bakery</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/dm-tokens.css?v=20260726" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-tokens.css?v=20260726" />
+  <link rel="stylesheet" href="/styles/main.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery.css?v=20260726" />
+  <script type="module" src="/scripts/auth.js"></script>
+  <script type="module" src="/apps/bakery/scripts/bakery-dashboard.js?v=20260727payoutcur"></script>
+  <meta name="clerk-publishable-key" content="pk_live_Y2xlcmsuZGF5bWFrZXIuY29tJA" />
+  <link rel="stylesheet" href="/styles/dm-surface-nav.css" />
+  <link rel="stylesheet" href="/styles/responsive.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-ui.css?v=20260729unified2" />
+  <!-- Platform-run bakeries: hides Daymaker-routing/payout chrome. -->
+  <link rel="stylesheet" href="/apps/bakery/styles/platform.css?v=20260729platform" />
+</head>
+<body class="bakery-scope">
+  <!-- Top bar. One line, and the same one on every bakery page: who you
+       are, whether you're live, and the way out. The dashboard used to open
+       with four stacked hero lines — a Caveat "Welcome back", a 48px name, a
+       hard-coded "checking on your queue…" that no JS ever updated, and a
+       meta line — before any work appeared. -->
+  <header class="bk-top">
+    <a class="bk-top__mark" href="/" aria-label="Daymaker home">
+      <img src="/brand/daymaker-logo.svg" alt="Daymaker" />
+    </a>
+    <span class="bk-top__sep" aria-hidden="true"></span>
+    <span class="bk-top__where" id="top-bakery-name">Bakery</span>
+    <span class="chip chip--good" id="top-status" hidden>
+      <span class="chip__dot" aria-hidden="true"></span><span id="top-status-text">Live</span>
+    </span>
+    <span class="bk-top__right">
+      <!-- A real component this time. This element used to ship `hidden`
+           with a comment promising it stayed invisible, while
+           updateNavBadge() set hidden = false and it carried no class at
+           all — so it rendered as a bare 17px numeral in the corner. -->
+      <span class="count-badge" id="nav-pending-badge" hidden></span>
+      <a class="bk-top__link" href="/bakery-settings" id="settings-link">Settings</a>
+      <div id="user-button-mount" data-auth-only="signed-in"></div>
+    </span>
+  </header>
+
+  <main class="bk-shell">
+    <!-- Admin shadow banner (visible when ?as=<bakery_id> is set) -->
+    <aside id="admin-shadow-banner" class="bk-note bk-note--warn" hidden>
+      <span>Viewing as another bakery on behalf of admin.</span>
+      <a href="/admin-bakeries">Back to admin bakeries</a>
+    </aside>
+
+    <!-- Auth gate (signed out) -->
+    <section class="auth-gate" id="auth-gate" data-auth-only="signed-out">
+      <h1 class="auth-gate__title">Sign in to your bakery</h1>
+      <p class="auth-gate__body">Manage assignments, track deliveries, and update your zones.</p>
+      <div class="auth-gate__actions">
+        <button class="bk-btn bk-btn--primary bk-btn--lg" data-clerk="sign-in" data-redirect="/bakery">Sign in</button>
+      </div>
+    </section>
+
+    <!-- No-access card (signed in but no bakery / wrong role / blocked) -->
+    <section class="no-access" id="no-access-card" hidden>
+      <h2 class="no-access__title" id="no-access-title">This account isn't linked to a bakery</h2>
+      <p class="no-access__body" id="no-access-body">
+        You're signed in, but we couldn't find a bakery for your account.
+      </p>
+      <span class="signed-in-as">Signed in as <strong id="no-access-email"></strong></span>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="bk-btn bk-btn--primary" href="/onboarding" id="no-access-apply">Apply as a bakery</a>
+      </div>
+    </section>
+
+    <!-- Page head -->
+    <div class="bk-head" id="bakery-hero" hidden>
+      <div>
+        <h1 class="bk-head__h">Queue</h1>
+        <p class="bk-head__sub" id="hero-meta"></p>
+      </div>
+      <div class="bk-head__right">
+        <!-- Was an "Invoice this month" button that opened a mailto: draft.
+             The bakery no longer sends us a number — we send them one and they
+             approve it, so this is a way in to the statement, not a compose
+             window. Hidden until there is something to look at. -->
+        <a class="bk-btn bk-btn--secondary" id="payouts-btn" href="/bakery/payouts" hidden>Payments</a>
+        <script src="/apps/bakery/scripts/bakery-shadow-link.js"></script>
+      </div>
+    </div>
+
+    <!-- Paused notice. A paused bakery keeps the entire dashboard and its
+         queue; the one thing that changes is that no new orders are routed
+         to it. Say that in words - the small "Paused" chip in the top bar is
+         too quiet to be the only signal. -->
+    <aside id="paused-note" class="bk-note bk-note--warn" role="note" hidden>
+      <span>
+        <strong>Your bakery is paused.</strong>
+        You keep your dashboard and every order already in your queue, but no
+        new orders will come in until Daymaker resumes you. Get in touch when
+        you are ready to bake again.
+      </span>
+    </aside>
+
+    <!-- Standing policy. Applies to every cake, so it sits directly under
+         the identity line rather than below the queue: the queue can run to
+         any length, and this would end up an unread scroll away. NOT
+         dismissible either - it is practical info every bakery needs on
+         hand, so there is no × and no dismissed state. It's repeated on the
+         order detail, where it's actionable. -->
+    <!-- Content removed for platform-run bakeries: the flavour + payout +
+         deliver-at-10:00 policy is Daymaker-routing guidance that does not
+         apply. Element kept (empty) so the dashboard JS that toggles its
+         .hidden never null-references it; platform.css also display:none's it. -->
+    <aside id="flavor-note" class="bk-note" role="note" hidden></aside>
+
+    <!-- Two numbers: the work on hand, and what it is worth this month. The
+         sub-line under "Assignments" carries the day's load, so the count of
+         cakes due today is still on the page without its own box. -->
+    <section class="kpis kpis--pair" id="bakery-stats" hidden aria-label="At a glance">
+      <div class="kpi kpi--lead">
+        <div class="kpi__l">Assignments</div>
+        <div class="kpi__v" id="stat-open">0</div>
+        <div class="kpi__s" id="stat-open-sub">nothing due today</div>
+      </div>
+      <!-- Used to read "To invoice" — a number the bakery had to act on by
+           writing us an email. Now it is what we owe and when it arrives,
+           which is the question they were actually asking. Doubles as the
+           approval prompt when a statement is waiting on them. -->
+      <a class="kpi kpi--wide" id="kpi-payout" href="/bakery/payouts">
+        <div class="kpi__l" id="stat-payout-label">This period</div>
+        <div class="kpi__v" id="stat-payout">—</div>
+        <div class="kpi__s" id="stat-payout-sub">nothing delivered yet</div>
+      </a>
+    </section>
+
+
+    <!-- Queue -->
+    <section id="bakery-queue" hidden>
+      <div class="qbar">
+        <div class="segs filter-chips" id="filter-chips" role="tablist" aria-label="Filter the queue">
+          <button class="seg" data-filter="all" role="tab" aria-selected="false">All</button>
+          <button class="seg is-active" data-filter="open" role="tab" aria-selected="true">
+            Assignments <span class="seg__n" id="seg-n-open"></span>
+          </button>
+          <button class="seg" data-filter="delivered" role="tab" aria-selected="false">Complete</button>
+        </div>
+        <label class="bk-search">
+          <svg class="bk-search__icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6.8" cy="6.8" r="4.6" stroke="currentColor" stroke-width="1.5" />
+            <path d="M10.4 10.4 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <input id="search-input" type="search" placeholder="Recipient, address or order"
+                 aria-label="Search the queue" autocomplete="off" />
+        </label>
+        <!-- States when the data is from, rather than a dot pulsing "live"
+             at a fixed 1.6s while polling backs off to 60s and stops when
+             the tab is hidden. -->
+        <span class="qbar__sync" id="queue-sync" aria-live="polite"></span>
+      </div>
+
+      <div id="order-list"></div>
+    </section>
+
+    <!-- ====================================================================
+         VC QUEUE — Cocola only (`bakery.is_vc_bakery === true`).
+         Legacy `coldcaked.orders` rows scoped to Cocola, grouped by
+         batch_id, with apply-flow chips, payout totals, QR + insert-card
+         downloads. Non-VC bakeries never see this section.
+         ==================================================================== -->
+    <section id="bakery-vc-queue" class="bakery-vc-queue" hidden aria-labelledby="vc-queue-h">
+      <header class="bk-head">
+        <div>
+          <h2 id="vc-queue-h" class="bk-head__h" style="font-size:19px;">VC cake queue</h2>
+          <p class="bk-head__sub" id="vc-status-line">Cocola · /vc orders</p>
+        </div>
+      </header>
+
+      <div class="kpis bakery-vc-stats" aria-label="VC queue at a glance">
+        <article class="kpi kpi--lead" data-vc-stat="active">
+          <div class="kpi__l">VC pending</div>
+          <div class="kpi__v" data-count>0</div>
+          <div class="kpi__s" data-sub>cakes waiting on you</div>
+        </article>
+        <article class="kpi" data-vc-stat="delivered_today">
+          <div class="kpi__l">VC completed today</div>
+          <div class="kpi__v" data-count>0</div>
+          <div class="kpi__s" data-sub>closed-out drops since midnight</div>
+        </article>
+      </div>
+
+      <div class="qbar">
+        <div class="segs filter-chips" id="vc-filter-chips" role="tablist">
+          <button class="seg is-active" data-vc-filter="all" role="tab" aria-selected="true">All</button>
+          <button class="seg" data-vc-filter="pending" role="tab" aria-selected="false">Pending</button>
+          <button class="seg" data-vc-filter="delivered" role="tab" aria-selected="false">Complete</button>
+        </div>
+        <label class="bk-search">
+          <svg class="bk-search__icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6.8" cy="6.8" r="4.6" stroke="currentColor" stroke-width="1.5" />
+            <path d="M10.4 10.4 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <input id="vc-search-input" type="search" placeholder="Order number, recipient, address"
+                 aria-label="Search VC orders" autocomplete="off" />
+        </label>
+        <span class="qbar__sync" id="vc-poll-status"><span id="vc-poll-cadence"></span></span>
+      </div>
+
+      <ol class="order-list queue-list" id="vc-order-list" aria-live="polite"></ol>
+      <div class="queue-empty" id="vc-order-list-empty" hidden>
+        <p class="queue-empty__t">Nothing in the VC queue</p>
+        <p class="queue-empty__s">New /vc orders show up here automatically.</p>
+      </div>
+    </section>
+
+
+    <!-- Profile-completion nudge. Was a pink card with a red percentage and
+         a progress bar that sat at 0% (i.e. an empty box) directly under the
+         hero. Now one dismissible line, below the work. -->
+    <aside class="profile-nudge bk-note" id="profile-nudge" hidden>
+      <div class="profile-nudge__body">
+        <div class="profile-nudge__top">
+          <div>
+            <div class="profile-nudge__title" id="profile-nudge-title">Finish your bakery profile</div>
+            <div class="profile-nudge__sub" id="profile-nudge-sub">A complete profile looks more trustworthy to customers.</div>
+          </div>
+        </div>
+        <div class="profile-nudge__items" id="profile-nudge-items"></div>
+      </div>
+      <button class="bk-note__x" id="profile-nudge-dismiss" type="button" aria-label="Dismiss">×</button>
+    </aside>
+
+    <!-- Error -->
+    <section class="error-card" id="error-card" hidden>
+      <h3 class="error-card__title">Couldn't load your queue</h3>
+      <p id="error-msg"></p>
+      <button class="bk-btn bk-btn--secondary" id="retry-btn" style="margin-top:12px;">Try again</button>
+    </section>
+  </main>
+</body>
+</html>

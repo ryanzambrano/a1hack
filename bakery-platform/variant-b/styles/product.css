@@ -1,0 +1,254 @@
+/* Product page — variant B "Stram". Loads after theme.css. */
+
+/* Shared page chrome - keep in sync with the other variant-b page styles */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  z-index: 50;
+}
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-header { border-bottom: 1px solid var(--ink); }
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.brand {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.cart-badge.has-items {
+  border-color: var(--accent);
+  color: var(--accent-strong); /* AA contrast for small text */
+}
+
+.site-footer {
+  margin-top: 56px;
+  border-top: 1px solid var(--ink);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding-top: 28px;
+  padding-bottom: 44px;
+}
+.footer-grid p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+@media (min-width: 640px) {
+  .footer-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Page states */
+.page-status { margin: 32px 0; color: var(--ink-soft); }
+.error-box { margin: 48px 0; max-width: 480px; }
+.error-box .btn { margin-top: 8px; }
+.error-actions { display: flex; align-items: center; gap: 20px; margin-top: 8px; }
+
+/* Layout */
+.back-link { margin: 20px 0 0; font-size: 0.9rem; }
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin: 20px 0 56px;
+}
+@media (min-width: 641px) {
+  .product-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+}
+
+.product-media { border: 1px solid var(--line); }
+.product-media img { display: block; width: 100%; height: auto; }
+
+.product-info h1 { margin-top: 2px; }
+.product-desc { margin-bottom: 6px; }
+.lead-time { font-size: 0.9rem; margin-bottom: 0; }
+
+/* Option groups */
+.product-config { margin-top: 24px; }
+.opt-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.opt-group legend { padding: 0; }
+.opt-list { border: 1px solid var(--line); }
+.opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.opt:last-child { border-bottom: 0; }
+.opt:hover { background: var(--line); }
+.opt-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.opt-mark {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--ink);
+  background: var(--surface);
+}
+.opt-input:checked + .opt-mark {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.opt-input:focus-visible + .opt-mark {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.opt:has(.opt-input:checked) .opt-value { font-weight: 700; }
+.opt-value { flex: 1; }
+.opt-price {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+.opt-price-abs { font-weight: 700; }
+
+/* Cake text */
+.cake-text-block { margin: 0 0 22px; }
+.cake-text-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cake-text-label { margin-bottom: 6px; }
+.cake-text-price { font-size: 0.85rem; white-space: nowrap; }
+.char-count {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0 0;
+  text-align: right;
+}
+
+/* Quantity stepper - same joined hairline box as the cart page */
+.qty-block { margin: 0 0 22px; }
+.qty-stepper { display: inline-flex; border: 1px solid var(--ink); }
+.qty-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.qty-btn:hover { background: var(--ink); color: var(--surface); }
+.qty-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.qty-input {
+  width: 64px;
+  height: 44px;
+  padding: 0 8px;
+  margin: 0;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Total and buy */
+.total-block {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin: 0 0 16px;
+}
+.total-line { display: flex; align-items: baseline; gap: 10px; }
+.total-price { font-size: 1.7rem; letter-spacing: -0.01em; }
+.vat-note { font-size: 0.8rem; }
+
+.add-btn { width: 100%; }
+@media (min-width: 641px) {
+  .add-btn { width: auto; min-width: 260px; }
+}
+
+/* Feedback after adding */
+.feedback { margin-top: 16px; }
+.feedback-ok, .feedback-error { border: 1px solid var(--ink); padding: 14px 16px; }
+.feedback-error { border-color: var(--warn); }
+.feedback-error .feedback-msg { color: var(--warn); }
+.feedback-msg { margin: 0 0 10px; font-weight: 600; font-size: 0.95rem; }
+.feedback-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.feedback-actions .btn { padding: 10px 16px; font-size: 0.9rem; }

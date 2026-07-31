@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakeriet på Hjørnet</title>
+  <meta name="description" content="Håndverksbakeri med kaker, bakst og brød. Bestill på nett og hent i butikken.">
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/catalog.css">
+</head>
+<body>
+  <a class="skip-link" href="#catalog">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html">
+        <span class="brand-name" id="brand-link">Bakeriet på Hjørnet</span>
+        <span class="brand-sub">Håndverksbakeri</span>
+      </a>
+      <a class="cart-link" id="cart-link" href="./cart.html" aria-label="Handlekurv">
+        <span>Handlekurv</span>
+        <span class="cart-badge" id="cart-count" aria-hidden="true" hidden>0</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="hero" hidden>
+      <div class="container">
+        <div class="hero-card">
+          <p class="hero-eyebrow">Håndverksbakeri</p>
+          <h1>Velkommen inn!</h1>
+          <p class="hero-desc" id="hero-desc"></p>
+          <dl class="pickup-info" id="pickup-info"></dl>
+          <p class="hero-note">Vi gleder oss til å bake for deg.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="container" id="status" aria-live="polite"></div>
+
+    <nav class="container category-nav" id="category-nav" aria-label="Kategorier" hidden></nav>
+
+    <div class="container" id="catalog" hidden></div>
+  </main>
+
+  <footer class="site-footer" id="site-footer" hidden>
+    <div class="container footer-inner">
+      <p class="footer-name" id="footer-name"></p>
+      <address class="footer-contact">
+        <span id="footer-address"></span><br>
+        <a id="footer-phone" href="#"></a><br>
+        <a id="footer-email" href="#"></a>
+      </address>
+      <p class="footer-note">Alle priser er inkl. mva.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/catalog.js"></script>
+</body>
+</html>

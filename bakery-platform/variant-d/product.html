@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produkt | Bakeriet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/product.css">
+</head>
+<body>
+  <a class="skip-link" href="#innhold">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="header-bar card">
+        <a class="brand" href="./index.html">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span class="brand-name" id="brand-name">Bakeriet</span>
+        </a>
+        <a class="btn btn-primary cart-link" href="./cart.html" id="cart-link">
+          Handlekurv
+          <span class="cart-badge" id="cart-badge" hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="innhold" class="container page-main">
+    <p class="crumb"><a href="./index.html">Tilbake til butikken</a></p>
+    <div id="status" class="card status-card">Henter produktet...</div>
+    <div id="product-view" class="product-grid" hidden></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-card card" id="footer-card" hidden></div>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/product.js"></script>
+</body>
+</html>

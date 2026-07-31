@@ -1,0 +1,15 @@
+[
+  {
+    "variant": "app",
+    "steps": {
+      "storefront": "ok",
+      "product-configure": "ok",
+      "cart": "ok",
+      "checkout-form": "ok",
+      "pay-and-confirm": "ok",
+      "admin-shows-order": "ok"
+    },
+    "orderNumber": "B-1009",
+    "jsErrors": []
+  }
+]

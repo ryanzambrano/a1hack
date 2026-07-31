@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kasse - Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/checkout.css">
+</head>
+<body>
+  <a class="skip-link" href="#checkout-root">Hopp til innholdet</a>
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="./index.html">Bakeriet på Hjørnet</a>
+      <a class="cart-link" href="./cart.html">
+        Kurv
+        <span class="cart-badge" id="cart-badge">0</span>
+        <span class="sr-only">varer i kurven</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container page-main" id="checkout-root">
+    <p class="muted">Laster kassen ...</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <span class="label">Adresse</span>
+        <p>Storgata 14, 2000 Lillestrøm</p>
+      </div>
+      <div>
+        <span class="label">Telefon</span>
+        <p><a href="tel:+4763801234">+47 63 80 12 34</a></p>
+      </div>
+      <div>
+        <span class="label">E-post</span>
+        <p><a href="mailto:post@bakeriethjornet.no">post@bakeriethjornet.no</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/checkout.js"></script>
+</body>
+</html>

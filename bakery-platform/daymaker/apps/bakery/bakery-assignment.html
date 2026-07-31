@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Assignment · Daymaker bakery</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/dm-tokens.css?v=20260726a" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-tokens.css?v=20260726a" />
+  <link rel="stylesheet" href="/apps/bakery/styles/orders.css?v=20260730b" />
+  <link rel="stylesheet" href="/styles/chat.css?v=20260726a" />
+  <script type="module" src="/scripts/auth.js"></script>
+  <script type="module" src="/apps/bakery/scripts/bakery-assignment.js?v=20260729unified2"></script>
+  <meta name="clerk-publishable-key" content="pk_live_Y2xlcmsuZGF5bWFrZXIuY29tJA" />
+  <link rel="stylesheet" href="/styles/dm-surface-nav.css" />
+  <link rel="stylesheet" href="/styles/responsive.css" />
+  <link rel="stylesheet" href="/apps/bakery/styles/bakery-ui.css?v=20260729unified2" />
+</head>
+<body class="bakery-body clerk-signed-out bakery-scope">
+
+<!-- The same top bar as every other bakery page. This one used to run its
+     own `.site-nav` with a separate brand block and link cluster — a third
+     page-header pattern on one surface. -->
+<header class="bk-top">
+  <a class="bk-top__mark" href="/" aria-label="Daymaker home">
+    <img src="/brand/daymaker-logo.svg" alt="Daymaker" />
+  </a>
+  <span class="bk-top__sep" aria-hidden="true"></span>
+  <span class="bk-top__where" id="bakery-nav-chip">Assignment</span>
+  <span class="bk-top__right">
+    <a href="/bakery" class="bk-top__link">Queue</a>
+    <button type="button" class="bk-top__link auth-btn-sign-in" data-clerk="sign-in"
+            data-auth-only="signed-out"
+            style="border:0;background:none;cursor:pointer;font:inherit;">Sign in</button>
+    <span id="user-button-mount" data-auth-only="signed-in" aria-label="Account menu"></span>
+  </span>
+</header>
+
+<main id="bakery-shell" class="bk-shell bk-shell--wide bakery-order-main">
+
+  <!-- Error state lives at the TOP. When the fetch failed, this page used to
+       keep "Loading…" as its H1, render all nine empty skeleton cards, and
+       put the error at the very bottom — so you scrolled past the entire
+       broken page to find out it had broken. -->
+  <section class="orders-card error-card" id="error-card" hidden role="alert">
+    <h2 class="orders-card__h">Couldn't load this assignment</h2>
+    <p id="error-message">Something went wrong on our side.</p>
+    <p class="error-card__hint" id="error-hint"></p>
+    <div class="error-card__actions">
+      <button type="button" class="bk-btn bk-btn--primary" id="error-retry-btn">Try again</button>
+      <a class="bk-btn bk-btn--secondary" href="/bakery">Back to queue</a>
+    </div>
+  </section>
+
+  <!-- Auth gate -->
+  <section class="orders-card auth-gate" id="auth-gate" hidden>
+    <h2 class="orders-card__h">Sign in to view this assignment</h2>
+    <p class="auth-gate__body">This page is gated to bakery staff for this assignment's bakery.</p>
+    <div class="auth-gate__actions">
+      <button type="button" class="bk-btn bk-btn--primary bk-btn--lg" data-clerk="sign-in">Sign in</button>
+    </div>
+  </section>
+
+  <!-- Assignment shell, hidden until loaded -->
+  <div id="order-shell" hidden>
+
+    <!-- The H1 used to render the customer's raw email address
+         ("3 cakes for ops@northwind.com") with a tilted Caveat line under
+         it ("you're mid-bake. snap a photo when it's pretty."). -->
+    <div class="bk-head">
+      <div>
+        <h1 class="bakery-order-hero__title" id="order-title">Loading…</h1>
+        <p class="bk-head__sub">
+          <span class="bk-ref" id="order-num"></span><span class="bk-head__subtext" id="order-sub"></span>
+        </p>
+      </div>
+      <div class="bk-head__right">
+        <span class="status-pill" id="status-pill" hidden></span>
+        <span class="chip chip--outline" id="cake-count-chip" hidden></span>
+      </div>
+    </div>
+
+    <!-- ============ STATUS FLASH ============
+         What used to be a full "Next step" CARD above the work. It always
+         restated whatever the card below it already said - "Upload both
+         photos to finish" sat on top of the Photos card, and "Set a delivery
+         date first" sat on top of the delivery-date card, so the page opened
+         with two boxes asking for the same thing. The only part that carried
+         its own information was the result line, so that is all that's left. -->
+    <div class="order-flash" id="action-result" hidden aria-live="polite"></div>
+
+    <!-- ============ DELIVERY DATE ============
+         ONE box, two states, driven by bakery-assignment.js:
+           · no date yet (ASAP campaign order) - the editor is the page's
+             single ask, and photo uploads stay locked until it's answered.
+           · date committed - collapses to the date itself plus a quiet
+             "Change", so a settled order isn't still asking a question.
+         Hidden entirely for terminal orders, VC orders, and customer-picked
+         windows. -->
+    <section class="orders-card delivery-date-card" id="delivery-date-card" hidden aria-labelledby="dd-h">
+      <h2 id="dd-h" class="orders-card__h dd-h">Delivery date</h2>
+
+      <!-- Settled state: the answer, not the question. -->
+      <div class="dd-settled" id="dd-settled" hidden>
+        <p class="dd-settled__date" id="dd-current"></p>
+        <button type="button" class="dd-change" id="dd-change"
+                aria-expanded="false" aria-controls="dd-editor">Change</button>
+      </div>
+
+      <div class="dd-editor" id="dd-editor">
+        <p class="orders-card__hint dd-hint" id="dd-hint"></p>
+        <div class="delivery-date-row">
+          <input class="dd-input" id="dd-input" type="date" aria-label="Delivery date" />
+          <button type="button" class="bk-btn bk-btn--primary" id="dd-confirm">Confirm date</button>
+        </div>
+        <!-- The native date field renders in the browser's own locale
+             (27.07.2026 on a Norwegian machine) while the rest of the page is
+             English. This echoes the pick back in the page's one format. -->
+        <p class="dd-echo" id="dd-echo" hidden></p>
+      </div>
+
+      <p class="delivery-date-result" id="dd-result" hidden aria-live="polite"></p>
+    </section>
+
+    <!-- Two columns from 1000px up: the work you do on this order on the
+         left, the context you refer to in a sticky column on the right. It
+         used to be nine equal-weight full-width cards in a 900px column
+         with ~500px of dead margin either side at 1440, so the photo
+         uploads you opened the page for sat seventh of nine. -->
+    <div class="order-detail">
+      <div class="order-detail__main">
+
+        <!-- ============ CAKES TABLE ============ -->
+        <section class="orders-card cakes-card" aria-labelledby="cakes-h">
+          <h2 id="cakes-h" class="orders-card__h">
+            Cakes &amp; designs
+            <span class="cake-section-count" id="cake-section-count"></span>
+          </h2>
+          <p class="orders-card__hint" id="cakes-hint">
+            Each row is one cake going to one recipient. Cards and edible prints are matched per cake.
+          </p>
+
+          <div class="cakes-toolbar">
+            <button type="button" class="bk-btn bk-btn--secondary btn-print-ticket" id="print-ticket-btn">
+              Print production ticket
+            </button>
+            <span class="cakes-toolbar__hint">One slip per cake to hand to the production team.</span>
+          </div>
+
+          <div class="cakes-table" id="cakes-table" role="table" aria-busy="true">
+            <div class="orders-skel" style="height:120px"></div>
+          </div>
+        </section>
+
+        <!-- ============ PER-CAKE PHOTO UPLOADS — one pair per recipient ============ -->
+        <section class="orders-card upload-card" id="upload-card" hidden aria-labelledby="upload-h">
+          <h2 id="upload-h" class="orders-card__h">Photos</h2>
+          <p class="upload-card__hint">
+            Each cake needs a <strong>cake photo</strong> (finished, before drop-off) and a
+            <strong>delivery photo</strong> (at the recipient's door). We match them to the right
+            recipient automatically.
+          </p>
+
+          <div class="per-cake-uploads" id="per-cake-uploads">
+            <div class="orders-skel" style="height:120px"></div>
+          </div>
+
+          <div class="upload-progress" id="upload-progress" hidden>
+            <div class="upload-progress__bar"><span></span></div>
+            <p class="upload-progress__label" id="upload-progress-label">Uploading…</p>
+          </div>
+
+          <div class="upload-done">
+            <!-- Was rendered at opacity .35 while disabled, which made the
+                 page's final action almost invisible. -->
+            <button type="button" class="bk-btn bk-btn--primary bk-btn--lg btn-action btn-action--done"
+                    id="done-btn" disabled>
+              Mark order complete
+            </button>
+            <p class="upload-done__hint" id="done-hint">Upload every photo to enable this.</p>
+          </div>
+        </section>
+
+        <!-- ============ PHOTO TRAIL (uploaded) ============
+             Used to render as an empty bordered card containing nothing but
+             a heading until the first photo existed. -->
+        <section class="orders-card photos-card" hidden id="photos-card" aria-labelledby="photos-h">
+          <h2 id="photos-h" class="orders-card__h">Photos uploaded</h2>
+          <div class="photo-trail" id="photo-grid"></div>
+        </section>
+
+      </div>
+
+      <aside class="order-detail__aside">
+        <!-- ============ ORDER SUMMARY ============ -->
+        <section class="orders-card order-summary-card" aria-labelledby="summary-h">
+          <h2 id="summary-h" class="orders-card__h">Order summary</h2>
+          <dl class="receipt" id="detail-dl" aria-busy="true">
+            <div class="orders-skel"></div>
+            <div class="orders-skel"></div>
+            <div class="orders-skel"></div>
+          </dl>
+        </section>
+
+        <!-- ============ MESSAGE THE CUSTOMER ============
+             Campaign assignments only (VC / manual orders have no customer
+             on the other end); mounted by bakery-assignment.js.
+
+             The conversation itself lives in the floating dock, which is on
+             every bakery page. #chat-mount is where the shared panel is
+             mounted before the dock adopts it - it is never a second visible
+             composer, which is what used to leave a "Write a message…" box
+             and an "Open messages" button stacked in the same card. -->
+        <section class="orders-card chat-card chat-card--doorway" id="chat-card" hidden aria-labelledby="chat-h">
+          <h2 id="chat-h" class="orders-card__h">
+            Message the customer
+            <span class="count-badge" id="chat-unread" hidden>0</span>
+          </h2>
+          <p class="orders-card__hint">We email them as soon as you send.</p>
+          <div id="chat-mount"></div>
+        </section>
+
+        <!-- ============ RECIPIENTS (downloadable contact table) ============ -->
+        <section class="orders-card recipients-card" id="recipients-card" hidden aria-labelledby="recipients-h">
+          <h2 id="recipients-h" class="orders-card__h">
+            Recipients
+            <span class="cake-section-count" id="recipients-count"></span>
+          </h2>
+          <p class="orders-card__hint">Everyone this order delivers to.</p>
+          <div class="recipients-table-wrap" id="recipients-table"></div>
+        </section>
+
+        <!-- ============ DELIVERY DIARY (timeline) ============ -->
+        <section class="orders-card events-card" aria-labelledby="events-h">
+          <h2 id="events-h" class="orders-card__h">History</h2>
+          <ol class="diary diary--plain" id="events-list" aria-live="polite">
+            <li class="diary__loading">Loading…</li>
+          </ol>
+        </section>
+
+        <!-- Standing policy, repeated here because this is where it's
+             actionable — you're about to bake this specific cake. On the
+             queue it was a permanent full-width notice above the work. -->
+        <aside class="bk-note" role="note">
+          <span>
+            <strong>Flavour is your call, and your payout stays the same.</strong>
+            Unless the instructions above say otherwise, deliveries happen on
+            weekdays and you should aim to deliver at 10:00.
+          </span>
+        </aside>
+      </aside>
+    </div>
+  </div>
+
+  <footer class="orders-foot">
+    <p class="orders-foot__id" id="orders-foot-id"></p>
+  </footer>
+</main>
+
+<!-- Per-cake "Mark unsuccessful" modal. Scoped to a single cake rather than
+     the whole assignment. -->
+<div class="modal-shell" id="mu-modal" hidden role="dialog" aria-modal="true" aria-labelledby="mu-h">
+  <div class="modal-card">
+    <h2 id="mu-h" class="orders-card__h">Mark this cake unsuccessful?</h2>
+    <p class="modal-card__body">This flips <strong id="mu-recipient">this recipient</strong>'s cake to "unsuccessful". The customer sees the reason on their campaign page.</p>
+    <label class="modal-card__label" for="mu-reason">Reason</label>
+    <textarea class="bk-in" id="mu-reason" rows="3" placeholder="e.g. recipient refused, address didn't exist, print smudged…" maxlength="500"></textarea>
+    <div class="modal-card__btns">
+      <button type="button" class="bk-btn bk-btn--secondary" id="mu-cancel">Never mind</button>
+      <button type="button" class="bk-btn bk-btn--danger" id="mu-confirm">Mark unsuccessful</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print host for production tickets. Hidden on screen; the print
+     stylesheet (orders.css) reveals only this and hides the rest of the
+     page when body.is-printing-tickets is set. Filled by
+     bakery-assignment.js when the bakery clicks "Print production ticket". -->
+<!-- Print host for the VC insert card - the QR card that ships in the box.
+     It is NOT a section on the page: it lives under "Card" in the cakes
+     table like every other card, and this is just the thing that gets
+     printed. Body-level on purpose: the @media print rule hides
+     `body > *:not(.insert-card-print-host)`, so nesting it inside <main>
+     (where it used to live) meant printing hid the card along with the page.
+     Kept off-screen rather than display:none so html2canvas can still
+     rasterise it for "Download PNG". -->
+<div class="insert-card-print-host" id="insert-card-wrap" hidden aria-hidden="true">
+  <div class="insert-card" id="insert-card" role="img" aria-label="Card insert for this order">
+    <div class="insert-card__brand">
+      <img class="insert-card__logo insert-card__logo--daymaker"
+           src="/assets/daymaker-wordmark.svg" alt="Daymaker" />
+      <span class="insert-card__brand-x" aria-hidden="true">×</span>
+      <img class="insert-card__logo insert-card__logo--bakery"
+           src="/assets/cocola-bakery-logo.png" alt="Cocola Bakery" />
+    </div>
+    <p class="insert-card__greeting">A cake for you.</p>
+    <p class="insert-card__msg">Scan the QR code to find out who sent it.</p>
+    <div class="insert-card__qr">
+      <img id="insert-card-qr" alt="QR code that opens the founder's pitch deck" />
+    </div>
+    <p class="insert-card__signoff">Love,<br>William &amp; Christian</p>
+  </div>
+</div>
+
+<div id="ticket-print-host" class="ticket-print-host" aria-hidden="true"></div>
+
+</body>
+</html>

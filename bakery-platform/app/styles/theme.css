@@ -1,0 +1,146 @@
+/* App "Daymaker System" theme: daymaker.com tokens, systematic rendering.
+   Load before page styles. */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --ink: #0a0a0a;
+  --ink-soft: #6b6358;
+  --accent: #ff2d2d;
+  --accent-strong: #c81e1e;
+  --accent-soft: #ffc4c4;
+  --accent-tint: rgba(255, 45, 45, 0.05);
+  --ok: #1e7b45;
+  --ok-soft: #e2f2e8;
+  --warn: #a02222;
+  --warn-soft: #ffe0e0;
+  --line: rgba(10, 10, 10, 0.12);
+  --line-strong: rgba(10, 10, 10, 0.22);
+  --radius: 10px;
+  --radius-input: 8px;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --font-num: "Fraunces", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 0.5rem; }
+h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 0.5rem; }
+h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.3rem; }
+p { margin: 0 0 0.8rem; }
+a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--accent-strong); }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 18px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  text-align: center;
+  text-decoration: none;
+}
+.btn:hover { background: var(--accent-tint); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn-ghost { border-color: var(--line-strong); font-weight: 500; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+input, select, textarea {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; }
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+.badge-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+.badge-soft { background: var(--accent-tint); border-color: var(--accent-soft); color: var(--accent-strong); }
+.badge-ok { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok); }
+.badge-warn { background: var(--warn-soft); border-color: var(--warn-soft); color: var(--warn); }
+.badge-muted { color: var(--ink-soft); }
+
+.muted { color: var(--ink-soft); }
+.price { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat { font-family: var(--font-num); font-weight: 800; }
+
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+.data-table th {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.data-table tr:hover td { background: var(--accent-tint); }
+.data-table .num { font-variant-numeric: tabular-nums; }
+
+.rule { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
+
+@media (max-width: 640px) {
+  h1 { font-size: 1.45rem; }
+  .container { padding: 0 12px; }
+}

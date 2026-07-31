@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administrasjon - Bakeriet på Hjørnet</title>
+  <link rel="stylesheet" href="./styles/theme.css">
+  <link rel="stylesheet" href="./styles/admin.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Hopp til innholdet</a>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <a class="brand-name" href="./index.html">Bakeriet på Hjørnet</a>
+        <span class="brand-sub">Administrasjon</span>
+      </div>
+      <nav class="topbar-links" aria-label="Sidenavigasjon">
+        <a href="./index.html">Butikk</a>
+        <a href="./cart.html">Handlekurv <span id="cart-badge" class="cart-badge" hidden>0</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <nav class="tabs" role="tablist" aria-label="Administrasjonsvisninger">
+      <button id="tab-orders" class="tab" type="button" role="tab" aria-selected="true" aria-controls="view-orders">Bestillinger</button>
+      <button id="tab-products" class="tab" type="button" role="tab" aria-selected="false" aria-controls="view-products">Produkter</button>
+    </nav>
+
+    <main id="main">
+      <section id="view-orders" role="tabpanel" aria-labelledby="tab-orders">
+        <div class="view-head">
+          <h1>Bestillinger</h1>
+          <button id="orders-refresh" class="btn btn-small" type="button">Oppdater</button>
+        </div>
+        <div id="order-filters" class="chips" role="group" aria-label="Filtrer på status"></div>
+        <div id="orders-status" class="status-area"></div>
+        <ul id="orders-list" class="order-list"></ul>
+      </section>
+
+      <section id="view-products" role="tabpanel" aria-labelledby="tab-products" hidden>
+        <div class="view-head">
+          <h1>Produkter</h1>
+          <button id="product-new" class="btn btn-primary btn-small" type="button">Nytt produkt</button>
+        </div>
+        <div id="product-form-holder"></div>
+        <div id="products-status" class="status-area"></div>
+        <ul id="products-list" class="product-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./scripts/admin.js"></script>
+</body>
+</html>
