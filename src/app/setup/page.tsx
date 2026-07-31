@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/store";
 import type { Fulfillment } from "@/lib/types";
 
@@ -38,8 +38,13 @@ export default function SetupPage() {
   const [hours, setHours] = useState("");
   const [monthlyBudget, setMonthlyBudget] = useState(300);
 
+  // Populate the form from the saved profile ONCE — the store re-polls every
+  // few seconds, and re-syncing on every poll would overwrite what the user
+  // is currently typing.
+  const formInitialized = useRef(false);
   useEffect(() => {
-    if (!hydrated || !bakery) return;
+    if (!hydrated || !bakery || formInitialized.current) return;
+    formInitialized.current = true;
     setName(bakery.name);
     setLocation(bakery.location);
     setCakeTypes(bakery.cakeTypes);

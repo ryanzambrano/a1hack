@@ -53,7 +53,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return;
       const data = (await res.json()) as AppState;
       if (pendingWrites.current > 0) return;
-      setState(data);
+      // Keep object identity stable when nothing changed — effects that
+      // depend on this state shouldn't re-fire on every poll tick.
+      setState((s) => (JSON.stringify(s) === JSON.stringify(data) ? s : data));
     } catch {
       /* server unreachable — keep showing what we have */
     } finally {
