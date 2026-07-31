@@ -64,7 +64,10 @@ export default function LeadDetailsPage({
           </span>
           {lead.status === "new" && (
             <button
-              onClick={() => startAiCall(lead.id)}
+              onClick={async () => {
+                const error = await startAiCall(lead.id);
+                if (error) alert(error);
+              }}
               className="animate-pulse-ring rounded-xl bg-rose-600 px-5 py-2.5 font-semibold text-white shadow-md hover:bg-rose-700"
             >
               📞 Trigger AI call

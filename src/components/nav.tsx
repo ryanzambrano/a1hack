@@ -56,11 +56,14 @@ export function Nav() {
             </span>
           )}
           <button
-            onClick={resetDemo}
+            onClick={() => {
+              if (confirm("Delete ALL leads, transcripts, the campaign, and the bakery profile?"))
+                resetDemo();
+            }}
             className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-500 transition-colors hover:bg-stone-100"
-            title="Clear all demo data"
+            title="Delete all leads, transcripts, campaign, and bakery profile"
           >
-            Reset demo
+            Clear all data
           </button>
         </div>
       </div>

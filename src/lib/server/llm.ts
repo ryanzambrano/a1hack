@@ -69,6 +69,84 @@ function parseTurn(raw: string): AgentTurn {
   return { say: cleaned || "Sorry, could you say that again?", done: false };
 }
 
+/** One-shot JSON completion against the gateway. Returns null on any failure. */
+async function gatewayJson<T>(system: string, user: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${process.env.A1_GATEWAY_BASE}/responses`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.A1_GATEWAY_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.A1_MODEL || "openai.gpt-5.6-terra",
+        input: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        max_output_tokens: 4000,
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      console.error("gateway error", res.status, (await res.text()).slice(0, 300));
+      return null;
+    }
+    const raw = extractText(await res.json());
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start === -1 || end === -1) return null;
+    return JSON.parse(raw.slice(start, end + 1)) as T;
+  } catch (err) {
+    console.error("gatewayJson failed", err);
+    return null;
+  }
+}
+
+export interface CampaignCopy {
+  headline: string;
+  body: string;
+  cta: string;
+  audience: string;
+}
+
+/** Writes real ad copy for the bakery's lead campaign. */
+export async function generateCampaignCopy(
+  bakery: Bakery
+): Promise<CampaignCopy | null> {
+  return gatewayJson<CampaignCopy>(
+    `You write high-converting Meta lead-ad copy for local businesses. Respond ONLY with strict JSON: {"headline": "...", "body": "...", "cta": "...", "audience": "..."}. headline: under 60 chars, may include one emoji. body: 2 sentences, mention concrete offerings and starting price, end with a reason to submit the lead form now. cta: 2-4 words. audience: one line of targeting (radius around the city, age range, 4-6 interests).`,
+    `Bakery: ${bakery.name} in ${bakery.location}. Cakes: ${bakery.cakeTypes.join(", ")}. Prices $${bakery.priceMin}–$${bakery.priceMax}. Fulfillment: ${bakery.fulfillment.join(", ")}. Hours: ${bakery.hours}.`
+  );
+}
+
+/** Invents a plausible lead persona for the simulate button. */
+export async function generateLeadPersona(): Promise<{ name: string } | null> {
+  return gatewayJson<{ name: string }>(
+    `Respond ONLY with strict JSON: {"name": "<a realistic, culturally diverse full name — vary it each time>"}.`,
+    `Invent one plausible customer name for a bakery lead. Seed: ${Math.random().toString(36).slice(2)}`
+  );
+}
+
+export interface ExtractedOrder {
+  customerName: string | null;
+  order: CakeOrder | null;
+  outcome: string;
+  nextAction: string | null;
+  qualified: boolean;
+}
+
+/** Structures a finished call transcript into a cake order + outcome. */
+export async function extractOrderFromTranscript(
+  bakery: Bakery | null,
+  transcript: string
+): Promise<ExtractedOrder | null> {
+  return gatewayJson<ExtractedOrder>(
+    `You analyze finished phone-call transcripts for ${bakery?.name ?? "a bakery"}'s cake-order line. Respond ONLY with strict JSON: {"customerName": <string or null>, "qualified": <true if the caller gave enough detail to quote>, "order": <null, or {"eventType","eventDate","guests","size","flavor","design","dietary","fulfillment","budget","callbackTime"} — use "Not specified" for gaps, guests is a number>, "outcome": "<one sentence: what happened on the call>", "nextAction": <string or null: the single best follow-up for the bakery>}`,
+    `Transcript:\n${transcript.slice(0, 12_000)}`
+  );
+}
+
 export async function agentTurn(
   bakery: Bakery | null,
   messages: ChatMessage[]

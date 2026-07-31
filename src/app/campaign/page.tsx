@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useApp } from "@/lib/store";
 
 export default function CampaignPage() {
-  const { bakery, campaign, hydrated, launchCampaign, generateCampaign } =
+  const { bakery, campaign, hydrated, busy, launchCampaign, generateCampaign } =
     useApp();
   const router = useRouter();
   const [launching, setLaunching] = useState(false);
@@ -56,7 +56,7 @@ export default function CampaignPage() {
               : "bg-stone-100 text-stone-600"
           }`}
         >
-          {live ? "● Live on Meta" : "Draft"}
+          {live ? "● Active" : "Draft"}
         </span>
       </div>
 
@@ -146,10 +146,11 @@ export default function CampaignPage() {
                 {launching ? "Launching…" : "🚀 Launch Campaign"}
               </button>
               <button
-                onClick={generateCampaign}
-                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                onClick={() => void generateCampaign()}
+                disabled={busy}
+                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50"
               >
-                ↻ Regenerate creative
+                {busy ? "Writing new creative…" : "↻ Regenerate creative"}
               </button>
             </div>
           )}

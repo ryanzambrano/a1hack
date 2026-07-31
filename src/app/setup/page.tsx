@@ -18,11 +18,11 @@ const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200";
 
 export default function SetupPage() {
-  const { bakery, saveBakery, hydrated } = useApp();
+  const { bakery, saveBakery, hydrated, busy } = useApp();
   const router = useRouter();
 
-  const [name, setName] = useState("Sweet Street Bakery");
-  const [location, setLocation] = useState("Austin, TX");
+  const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
   const [cakeTypes, setCakeTypes] = useState<string[]>([
     "Birthday",
     "Custom / themed",
@@ -34,8 +34,8 @@ export default function SetupPage() {
     "pickup",
     "delivery",
   ]);
-  const [phone, setPhone] = useState("(512) 555-0148");
-  const [hours, setHours] = useState("Tue–Sun, 8 AM – 6 PM");
+  const [phone, setPhone] = useState("");
+  const [hours, setHours] = useState("");
   const [monthlyBudget, setMonthlyBudget] = useState(300);
 
   useEffect(() => {
@@ -62,10 +62,11 @@ export default function SetupPage() {
     phone.trim() &&
     monthlyBudget > 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid) return;
-    saveBakery({
+    // saveBakery persists the profile and generates the ad campaign with the LLM.
+    await saveBakery({
       name: name.trim(),
       location: location.trim(),
       cakeTypes,
@@ -221,10 +222,10 @@ export default function SetupPage() {
         <div className="flex items-end sm:col-span-2">
           <button
             type="submit"
-            disabled={!valid}
+            disabled={!valid || busy}
             className="w-full rounded-xl bg-rose-600 px-4 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
           >
-            Save &amp; generate campaign →
+            {busy ? "Generating your campaign…" : "Save & generate campaign →"}
           </button>
         </div>
       </form>

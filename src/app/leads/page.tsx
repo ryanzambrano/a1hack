@@ -101,7 +101,7 @@ export default function LeadsPage() {
           <p className="font-medium text-stone-700">No leads yet</p>
           <p className="max-w-sm text-sm text-stone-500">
             {campaign?.status === "active"
-              ? "Your ad is live — the first lead should arrive any second. Or simulate one to demo the flow."
+              ? "Leads from your ad's form land here automatically. Use “Simulate incoming lead” to test the pipeline end to end."
               : "Launch your campaign, then watch leads flow into this pipeline."}
           </p>
         </div>

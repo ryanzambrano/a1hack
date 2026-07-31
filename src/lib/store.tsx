@@ -9,8 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { buildCallScript, DEMO_ORDER, makeDemoLead } from "./demo";
-import type { Bakery, Campaign, Lead, TranscriptMessage } from "./types";
+import type { Bakery, Campaign, Lead } from "./types";
 
 interface AppState {
   bakery: Bakery | null;
@@ -20,19 +19,14 @@ interface AppState {
 
 interface AppStore extends AppState {
   hydrated: boolean;
-  saveBakery: (bakery: Bakery) => void;
-  generateCampaign: () => void;
+  busy: boolean;
+  saveBakery: (bakery: Bakery) => Promise<void>;
+  generateCampaign: () => Promise<void>;
   launchCampaign: () => void;
-  simulateIncomingLead: () => void;
-  startAiCall: (leadId: string) => void;
+  simulateIncomingLead: () => Promise<void>;
+  startAiCall: (leadId: string) => Promise<string | null>;
   updateLeadStatus: (leadId: string, status: Lead["status"]) => void;
   resetDemo: () => void;
-}
-
-interface StateResponse {
-  bakery: Bakery | null;
-  campaign: Campaign | null;
-  leads: Lead[];
 }
 
 const POLL_MS = 2500;
@@ -40,50 +34,51 @@ const EMPTY: AppState = { bakery: null, campaign: null, leads: [] };
 
 const AppContext = createContext<AppStore | null>(null);
 
-function buildCampaign(bakery: Bakery): Campaign {
-  const city = bakery.location.split(",")[0].trim();
-  const topCake = bakery.cakeTypes[0]?.toLowerCase() || "custom";
-  return {
-    id: "camp-1",
-    headline: `Need a custom ${topCake} cake in ${city}? 🎂`,
-    body: `${bakery.name} makes ${bakery.cakeTypes
-      .slice(0, 3)
-      .join(", ")
-      .toLowerCase()} cakes from $${bakery.priceMin}. Tell us about your event and get a personal quote in minutes — no phone tag required.`,
-    cta: "Get My Quote",
-    audience: `People within 15 miles of ${city} · Ages 25–55 · Interests: birthdays, weddings, party planning, custom cakes`,
-    dailyBudget: Math.max(5, Math.round(bakery.monthlyBudget / 30)),
-    status: "draft",
-    launchedAt: null,
-  };
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  // Leads whose simulated call is mid-animation: the poll must not overwrite them.
-  const activeCalls = useRef<Set<string>>(new Set());
   // Outstanding writes: the poll must not overwrite state we haven't persisted yet.
   const pendingWrites = useRef(0);
-  const leadCounter = useRef(0);
   const stateRef = useRef(state);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch("/api/state");
+      if (!res.ok) return;
+      const data = (await res.json()) as AppState;
+      if (pendingWrites.current > 0) return;
+      setState(data);
+    } catch {
+      /* server unreachable — keep showing what we have */
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  // Postgres is the source of truth; poll it and reconcile.
+  useEffect(() => {
+    void refresh();
+    const id = setInterval(() => void refresh(), POLL_MS);
+    return () => clearInterval(id);
+  }, [refresh]);
+
   const send = useCallback(
     async (path: string, method: "POST" | "PATCH", body?: unknown) => {
       pendingWrites.current += 1;
       try {
-        await fetch(path, {
+        return await fetch(path, {
           method,
           headers: { "Content-Type": "application/json" },
           body: body === undefined ? undefined : JSON.stringify(body),
         });
       } catch {
-        /* server unreachable — the optimistic update stands until the next poll */
+        return null;
       } finally {
         pendingWrites.current -= 1;
       }
@@ -91,73 +86,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Postgres is the source of truth; poll it and reconcile.
-  useEffect(() => {
-    let cancelled = false;
-
-    const tick = async () => {
-      try {
-        const res = await fetch("/api/state");
-        if (!res.ok) return;
-        const data = (await res.json()) as StateResponse;
-        if (cancelled || pendingWrites.current > 0) return;
-
-        setState((s) => ({
-          bakery: data.bakery,
-          campaign: data.campaign,
-          leads: data.leads.map(
-            (lead) =>
-              (activeCalls.current.has(lead.id)
-                ? s.leads.find((l) => l.id === lead.id)
-                : null) ?? lead
-          ),
-        }));
-        leadCounter.current = Math.max(leadCounter.current, data.leads.length);
-      } catch {
-        /* server unreachable — keep showing what we have */
-      } finally {
-        if (!cancelled) setHydrated(true);
-      }
-    };
-
-    void tick();
-    const id = setInterval(tick, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
   const saveBakery = useCallback(
-    (bakery: Bakery) => {
-      const campaign = buildCampaign(bakery);
-      setState((s) => ({ ...s, bakery, campaign }));
-      void (async () => {
-        // The campaign row references the bakery, so it has to land first.
+    async (bakery: Bakery) => {
+      setState((s) => ({ ...s, bakery }));
+      setBusy(true);
+      try {
         await send("/api/bakery", "POST", bakery);
-        await send("/api/campaign", "POST", campaign);
-      })();
+        // A profile change means the ad creative is stale — regenerate it.
+        await send("/api/campaign/generate", "POST");
+      } finally {
+        setBusy(false);
+      }
+      await refresh();
     },
-    [send]
+    [refresh, send]
   );
 
-  const generateCampaign = useCallback(() => {
-    const { bakery } = stateRef.current;
-    if (!bakery) return;
-    const campaign = buildCampaign(bakery);
-    setState((s) => ({ ...s, campaign }));
-    void send("/api/campaign", "POST", campaign);
-  }, [send]);
-
-  const addLead = useCallback(() => {
-    const lead: Lead = {
-      ...makeDemoLead(leadCounter.current++),
-      id: `lead-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      createdAt: Date.now(),
-    };
-    setState((s) => ({ ...s, leads: [lead, ...s.leads] }));
-    void send("/api/leads", "POST", lead);
-  }, [send]);
+  const generateCampaign = useCallback(async () => {
+    setBusy(true);
+    try {
+      await send("/api/campaign/generate", "POST");
+    } finally {
+      setBusy(false);
+    }
+    await refresh();
+  }, [refresh, send]);
 
   const launchCampaign = useCallback(() => {
     const { campaign } = stateRef.current;
@@ -169,9 +122,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setState((s) => ({ ...s, campaign: launched }));
     void send("/api/campaign", "POST", launched);
-    // First lead arrives moments after launch.
-    setTimeout(addLead, 4000);
-  }, [addLead, send]);
+  }, [send]);
+
+  const simulateIncomingLead = useCallback(async () => {
+    await send("/api/leads/simulate", "POST");
+    await refresh();
+  }, [refresh, send]);
+
+  /** Places a real outbound AI call. Resolves to an error message, or null on success. */
+  const startAiCall = useCallback(
+    async (leadId: string): Promise<string | null> => {
+      setState((s) => ({
+        ...s,
+        leads: s.leads.map((l) =>
+          l.id === leadId ? { ...l, status: "calling" } : l
+        ),
+      }));
+      const res = await send(`/api/leads/${leadId}/call`, "POST");
+      await refresh();
+      if (!res) return "Server unreachable — try again.";
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        return data?.error ?? `Call failed (${res.status}).`;
+      }
+      return null;
+    },
+    [refresh, send]
+  );
 
   const updateLeadStatus = useCallback(
     (leadId: string, status: Lead["status"]) => {
@@ -184,87 +163,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [send]
   );
 
-  const startAiCall = useCallback(
-    (leadId: string) => {
-      if (activeCalls.current.has(leadId)) return;
-
-      const { leads, bakery } = stateRef.current;
-      const lead = leads.find((l) => l.id === leadId);
-      if (!lead || !bakery) return;
-
-      activeCalls.current.add(leadId);
-      const script = buildCallScript(bakery.name, lead);
-      const transcript: TranscriptMessage[] = [];
-
-      setState((s) => ({
-        ...s,
-        leads: s.leads.map((l) =>
-          l.id === leadId
-            ? { ...l, status: "calling", transcript: [], order: null }
-            : l
-        ),
-      }));
-
-      let elapsed = 800;
-      script.forEach((step) => {
-        elapsed += step.delay;
-        setTimeout(() => {
-          const line: TranscriptMessage = {
-            speaker: step.speaker,
-            text: step.text,
-          };
-          transcript.push(line);
-          setState((cur) => ({
-            ...cur,
-            leads: cur.leads.map((l) =>
-              l.id === leadId
-                ? { ...l, transcript: [...l.transcript, line] }
-                : l
-            ),
-          }));
-        }, elapsed);
-      });
-
-      setTimeout(() => {
-        const result = {
-          status: "qualified" as const,
-          order: DEMO_ORDER,
-          callOutcome:
-            "Completed — customer answered all qualifying questions and confirmed the order details.",
-          nextAction: "Call customer today after 3 PM with a quote",
-        };
-        setState((cur) => ({
-          ...cur,
-          leads: cur.leads.map((l) =>
-            l.id === leadId ? { ...l, ...result } : l
-          ),
-        }));
-        // Release the lead back to the poll only once the call is persisted.
-        void send(`/api/leads/${leadId}`, "PATCH", {
-          ...result,
-          transcript,
-        }).finally(() => activeCalls.current.delete(leadId));
-      }, elapsed + 1500);
-    },
-    [send]
-  );
-
   const resetDemo = useCallback(() => {
-    activeCalls.current.clear();
-    leadCounter.current = 0;
     setState(EMPTY);
-    void send("/api/reset", "POST");
-  }, [send]);
+    void send("/api/reset", "POST").then(() => refresh());
+  }, [refresh, send]);
 
   return (
     <AppContext.Provider
       value={{
         ...state,
         hydrated,
+        busy,
         saveBakery,
         generateCampaign,
         launchCampaign,
-        simulateIncomingLead: addLead,
+        simulateIncomingLead,
         startAiCall,
         updateLeadStatus,
         resetDemo,
