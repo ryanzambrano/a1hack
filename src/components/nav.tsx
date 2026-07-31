@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/setup", label: "Setup" },
@@ -11,10 +12,15 @@ const LINKS = [
   { href: "/test-call", label: "Test Call" },
 ];
 
-export function Nav() {
+export function Nav({ userEmail }: { userEmail: string | null }) {
   const pathname = usePathname();
   const { bakery, leads, resetDemo } = useApp();
   const newLeads = leads.filter((l) => l.status === "new").length;
+
+  async function signOut() {
+    await createClient().auth.signOut();
+    window.location.assign("/");
+  }
 
   return (
     <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/90 backdrop-blur">
@@ -50,9 +56,9 @@ export function Nav() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          {bakery && (
+          {(bakery || userEmail) && (
             <span className="hidden text-sm text-stone-500 sm:inline">
-              {bakery.name}
+              {bakery ? bakery.name : userEmail}
             </span>
           )}
           <button
@@ -64,6 +70,12 @@ export function Nav() {
             title="Delete all leads, transcripts, campaign, and bakery profile"
           >
             Clear all data
+          </button>
+          <button
+            onClick={signOut}
+            className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-500 transition-colors hover:bg-stone-100"
+          >
+            Sign out
           </button>
         </div>
       </div>
