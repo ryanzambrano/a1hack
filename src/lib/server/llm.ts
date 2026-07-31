@@ -1,5 +1,5 @@
 import type { Bakery, CakeOrder } from "../types";
-import type { ChatMessage } from "./state";
+import type { ChatMessage } from "./db";
 
 export interface AgentTurn {
   say: string;
@@ -80,7 +80,7 @@ export async function agentTurn(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.A1_MODEL ?? "openai.gpt-5.6-luna",
+      model: process.env.A1_MODEL || "openai.gpt-5.6-luna",
       input: [
         { role: "system", content: systemPrompt(bakery) },
         ...messages,

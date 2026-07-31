@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { buildCallScript, DEMO_ORDER, makeDemoLead } from "./demo";
-import type { Bakery, Campaign, Lead } from "./types";
+import type { Bakery, Campaign, Lead, TranscriptMessage } from "./types";
 
 interface AppState {
   bakery: Bakery | null;
@@ -29,7 +29,13 @@ interface AppStore extends AppState {
   resetDemo: () => void;
 }
 
-const STORAGE_KEY = "sweetleads-state";
+interface StateResponse {
+  bakery: Bakery | null;
+  campaign: Campaign | null;
+  leads: Lead[];
+}
+
+const POLL_MS = 2500;
 const EMPTY: AppState = { bakery: null, campaign: null, leads: [] };
 
 const AppContext = createContext<AppStore | null>(null);
@@ -55,112 +61,117 @@ function buildCampaign(bakery: Bakery): Campaign {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
+
+  // Leads whose simulated call is mid-animation: the poll must not overwrite them.
   const activeCalls = useRef<Set<string>>(new Set());
+  // Outstanding writes: the poll must not overwrite state we haven't persisted yet.
+  const pendingWrites = useRef(0);
   const leadCounter = useRef(0);
+  const stateRef = useRef(state);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as AppState;
-        // A call can't survive a page reload — park interrupted calls in follow-up.
-        parsed.leads = parsed.leads.map((l) =>
-          l.status === "calling" ? { ...l, status: "follow_up" } : l
-        );
-        leadCounter.current = parsed.leads.length;
-        setState(parsed);
+    stateRef.current = state;
+  }, [state]);
+
+  const send = useCallback(
+    async (path: string, method: "POST" | "PATCH", body?: unknown) => {
+      pendingWrites.current += 1;
+      try {
+        await fetch(path, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+      } catch {
+        /* server unreachable — the optimistic update stands until the next poll */
+      } finally {
+        pendingWrites.current -= 1;
       }
-    } catch {
-      /* corrupted state — start fresh */
-    }
-    setHydrated(true);
-  }, []);
+    },
+    []
+  );
 
+  // Postgres is the source of truth; poll it and reconcile.
   useEffect(() => {
-    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state, hydrated]);
+    let cancelled = false;
 
-  const pushBakeryToServer = useCallback((bakery: Bakery) => {
-    void fetch("/api/bakery", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bakery),
-    }).catch(() => {});
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/state");
+        if (!res.ok) return;
+        const data = (await res.json()) as StateResponse;
+        if (cancelled || pendingWrites.current > 0) return;
+
+        setState((s) => ({
+          bakery: data.bakery,
+          campaign: data.campaign,
+          leads: data.leads.map(
+            (lead) =>
+              (activeCalls.current.has(lead.id)
+                ? s.leads.find((l) => l.id === lead.id)
+                : null) ?? lead
+          ),
+        }));
+        leadCounter.current = Math.max(leadCounter.current, data.leads.length);
+      } catch {
+        /* server unreachable — keep showing what we have */
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    };
+
+    void tick();
+    const id = setInterval(tick, POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   const saveBakery = useCallback(
     (bakery: Bakery) => {
-      setState((s) => ({ ...s, bakery, campaign: buildCampaign(bakery) }));
-      pushBakeryToServer(bakery);
+      const campaign = buildCampaign(bakery);
+      setState((s) => ({ ...s, bakery, campaign }));
+      void (async () => {
+        // The campaign row references the bakery, so it has to land first.
+        await send("/api/bakery", "POST", bakery);
+        await send("/api/campaign", "POST", campaign);
+      })();
     },
-    [pushBakeryToServer]
+    [send]
   );
 
-  // Poll the server for real phone-call leads and merge them into the pipeline.
-  useEffect(() => {
-    if (!hydrated) return;
-    const tick = async () => {
-      try {
-        const res = await fetch("/api/live-leads");
-        if (!res.ok) return;
-        const data: { leads: Lead[]; hasBakery: boolean } = await res.json();
-        setState((s) => {
-          // Re-brief the voice agent if the server restarted and lost the profile.
-          if (!data.hasBakery && s.bakery) pushBakeryToServer(s.bakery);
-          if (!data.leads?.length) return s;
-          const byId = new Map(s.leads.map((l) => [l.id, l] as const));
-          let changed = false;
-          for (const lead of data.leads) {
-            const existing = byId.get(lead.id);
-            if (!existing || JSON.stringify(existing) !== JSON.stringify(lead)) {
-              byId.set(lead.id, lead);
-              changed = true;
-            }
-          }
-          if (!changed) return s;
-          const merged = [...byId.values()].sort(
-            (a, b) => b.createdAt - a.createdAt
-          );
-          return { ...s, leads: merged };
-        });
-      } catch {
-        /* voice server unreachable — sim mode still works */
-      }
-    };
-    void tick();
-    const id = setInterval(tick, 2500);
-    return () => clearInterval(id);
-  }, [hydrated, pushBakeryToServer]);
-
   const generateCampaign = useCallback(() => {
-    setState((s) =>
-      s.bakery ? { ...s, campaign: buildCampaign(s.bakery) } : s
-    );
-  }, []);
+    const { bakery } = stateRef.current;
+    if (!bakery) return;
+    const campaign = buildCampaign(bakery);
+    setState((s) => ({ ...s, campaign }));
+    void send("/api/campaign", "POST", campaign);
+  }, [send]);
 
   const addLead = useCallback(() => {
-    setState((s) => {
-      const lead: Lead = {
-        ...makeDemoLead(leadCounter.current++),
-        id: `lead-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        createdAt: Date.now(),
-      };
-      return { ...s, leads: [lead, ...s.leads] };
-    });
-  }, []);
+    const lead: Lead = {
+      ...makeDemoLead(leadCounter.current++),
+      id: `lead-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: Date.now(),
+    };
+    setState((s) => ({ ...s, leads: [lead, ...s.leads] }));
+    void send("/api/leads", "POST", lead);
+  }, [send]);
 
   const launchCampaign = useCallback(() => {
-    setState((s) =>
-      s.campaign
-        ? {
-            ...s,
-            campaign: { ...s.campaign, status: "active", launchedAt: Date.now() },
-          }
-        : s
-    );
+    const { campaign } = stateRef.current;
+    if (!campaign) return;
+    const launched: Campaign = {
+      ...campaign,
+      status: "active",
+      launchedAt: Date.now(),
+    };
+    setState((s) => ({ ...s, campaign: launched }));
+    void send("/api/campaign", "POST", launched);
     // First lead arrives moments after launch.
     setTimeout(addLead, 4000);
-  }, [addLead]);
+  }, [addLead, send]);
 
   const updateLeadStatus = useCallback(
     (leadId: string, status: Lead["status"]) => {
@@ -168,37 +179,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...s,
         leads: s.leads.map((l) => (l.id === leadId ? { ...l, status } : l)),
       }));
+      void send(`/api/leads/${leadId}`, "PATCH", { status });
     },
-    []
+    [send]
   );
 
-  const startAiCall = useCallback((leadId: string) => {
-    if (activeCalls.current.has(leadId)) return;
-    activeCalls.current.add(leadId);
+  const startAiCall = useCallback(
+    (leadId: string) => {
+      if (activeCalls.current.has(leadId)) return;
 
-    setState((s) => {
-      const lead = s.leads.find((l) => l.id === leadId);
-      if (!lead || !s.bakery) {
-        activeCalls.current.delete(leadId);
-        return s;
-      }
-      const script = buildCallScript(s.bakery.name, lead);
+      const { leads, bakery } = stateRef.current;
+      const lead = leads.find((l) => l.id === leadId);
+      if (!lead || !bakery) return;
+
+      activeCalls.current.add(leadId);
+      const script = buildCallScript(bakery.name, lead);
+      const transcript: TranscriptMessage[] = [];
+
+      setState((s) => ({
+        ...s,
+        leads: s.leads.map((l) =>
+          l.id === leadId
+            ? { ...l, status: "calling", transcript: [], order: null }
+            : l
+        ),
+      }));
 
       let elapsed = 800;
       script.forEach((step) => {
         elapsed += step.delay;
         setTimeout(() => {
+          const line: TranscriptMessage = {
+            speaker: step.speaker,
+            text: step.text,
+          };
+          transcript.push(line);
           setState((cur) => ({
             ...cur,
             leads: cur.leads.map((l) =>
               l.id === leadId
-                ? {
-                    ...l,
-                    transcript: [
-                      ...l.transcript,
-                      { speaker: step.speaker, text: step.text },
-                    ],
-                  }
+                ? { ...l, transcript: [...l.transcript, line] }
                 : l
             ),
           }));
@@ -206,40 +226,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       setTimeout(() => {
-        activeCalls.current.delete(leadId);
+        const result = {
+          status: "qualified" as const,
+          order: DEMO_ORDER,
+          callOutcome:
+            "Completed — customer answered all qualifying questions and confirmed the order details.",
+          nextAction: "Call customer today after 3 PM with a quote",
+        };
         setState((cur) => ({
           ...cur,
           leads: cur.leads.map((l) =>
-            l.id === leadId
-              ? {
-                  ...l,
-                  status: "qualified",
-                  order: DEMO_ORDER,
-                  callOutcome:
-                    "Completed — customer answered all qualifying questions and confirmed the order details.",
-                  nextAction: "Call customer today after 3 PM with a quote",
-                }
-              : l
+            l.id === leadId ? { ...l, ...result } : l
           ),
         }));
+        // Release the lead back to the poll only once the call is persisted.
+        void send(`/api/leads/${leadId}`, "PATCH", {
+          ...result,
+          transcript,
+        }).finally(() => activeCalls.current.delete(leadId));
       }, elapsed + 1500);
-
-      return {
-        ...s,
-        leads: s.leads.map((l) =>
-          l.id === leadId
-            ? { ...l, status: "calling", transcript: [], order: null }
-            : l
-        ),
-      };
-    });
-  }, []);
+    },
+    [send]
+  );
 
   const resetDemo = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    activeCalls.current.clear();
     leadCounter.current = 0;
     setState(EMPTY);
-  }, []);
+    void send("/api/reset", "POST");
+  }, [send]);
 
   return (
     <AppContext.Provider

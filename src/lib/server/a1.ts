@@ -1,4 +1,5 @@
-const BASE = process.env.A1_BASE_URL ?? "https://hack.a1mobile.com";
+// `||` not `??`: an unset key in .env.local arrives as "", which must still fall back.
+const BASE = process.env.A1_BASE_URL || "https://hack.a1mobile.com";
 
 export async function sendSms(to: string, body: string): Promise<boolean> {
   try {
