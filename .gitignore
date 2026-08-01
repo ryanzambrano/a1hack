@@ -43,9 +43,11 @@ supabase/.temp
 *.tsbuildinfo
 next-env.d.ts
 
-# Downscaled copies of the bakery photo archive — regenerate with
-# scripts/ingest-archive.mjs --thumbs-only. Too large for git.
-/public/archive/
+# The bakery photo archive (public/archive) IS committed. It looks like build
+# output but is not: the originals are 3000x4000 camera files in a folder on one
+# laptop, so nobody else can run ingest-archive.mjs to regenerate these. Every
+# archive_cakes row in Supabase points at /archive/<hash>.jpg, so leaving them
+# out 404s the proposal pages and search results for everyone but the uploader.
 
 # Reference screenshots from scripts/scrape-vercel-design.mjs. 13 MB of PNGs;
 # regenerate with `npm run design:scrape`. The token/component JSON is kept.
