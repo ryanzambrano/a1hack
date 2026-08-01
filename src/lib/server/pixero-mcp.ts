@@ -14,7 +14,16 @@ export interface PixeroTool {
   inputSchema: Record<string, unknown>;
 }
 
-/** Opens an authenticated MCP session, runs fn, always closes the session. */
+function isTimeout(err: unknown): boolean {
+  return /-32001|timed? ?out/i.test(err instanceof Error ? err.message : String(err));
+}
+
+/**
+ * Opens an authenticated MCP session, runs fn, always closes the session.
+ * Pixero's server intermittently answers -32001 (its own tool execution timed
+ * out) under load; those calls almost always succeed on a fresh session, so
+ * time-outs get one automatic retry before the error propagates.
+ */
 export async function withPixeroMcp<T>(
   fn: (client: Client) => Promise<T>
 ): Promise<T> {
@@ -23,15 +32,25 @@ export async function withPixeroMcp<T>(
     throw new Error("Pixero is not connected — visit /api/pixero/connect first.");
   }
 
-  const transport = new StreamableHTTPClientTransport(new URL(PIXERO_MCP_URL), {
-    requestInit: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const client = new Client({ name: "sweetleads", version: "1.0.0" });
-  await client.connect(transport);
+  const attempt = async (): Promise<T> => {
+    const transport = new StreamableHTTPClientTransport(new URL(PIXERO_MCP_URL), {
+      requestInit: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const client = new Client({ name: "sweetleads", version: "1.0.0" });
+    await client.connect(transport);
+    try {
+      return await fn(client);
+    } finally {
+      await client.close().catch(() => {});
+    }
+  };
+
   try {
-    return await fn(client);
-  } finally {
-    await client.close().catch(() => {});
+    return await attempt();
+  } catch (err) {
+    if (!isTimeout(err)) throw err;
+    console.warn("pixero mcp timed out — retrying once", err);
+    return attempt();
   }
 }
 

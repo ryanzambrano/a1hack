@@ -24,6 +24,19 @@ interface MetaCampaign {
   ads: { name: string; adsetName: string; status: string }[];
 }
 
+/** Raw provider errors go to the console; the screen gets calm copy. */
+function friendly(err: unknown, doing: string): string {
+  console.error(doing, err);
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/-32001|timed? ?out/i.test(msg)) {
+    return "Pixero is taking longer than usual — give it a few seconds and try again.";
+  }
+  if (/not connected/i.test(msg)) {
+    return "Pixero isn't connected yet — connect it from Setup first.";
+  }
+  return `Couldn't finish ${doing} just now — try again in a moment.`;
+}
+
 /** "Show the ads and the campaign that's live" — pulled through Pixero MCP. */
 function MetaLivePanel() {
   const [campaigns, setCampaigns] = useState<MetaCampaign[] | null>(null);
@@ -44,7 +57,7 @@ function MetaLivePanel() {
         `Published to ${data.adAccountId} (created paused). ${data.publish}`
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Publish failed");
+      setError(friendly(err, "publishing"));
     } finally {
       setPublishing(false);
     }
@@ -59,7 +72,7 @@ function MetaLivePanel() {
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setCampaigns(data.campaigns);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load ads");
+      setError(friendly(err, "loading the ads"));
     } finally {
       setLoading(false);
     }
@@ -106,7 +119,7 @@ function MetaLivePanel() {
           </Note>
         )}
 
-        {error && <Note tone="red">{error}</Note>}
+        {error && <Note tone="amber">{error}</Note>}
 
         {campaigns?.length === 0 && (
           <p className="text-sm text-gray-900">
@@ -194,16 +207,18 @@ export default function CampaignPage() {
 
   const live = campaign.status === "active";
 
-  const MAX_ATTEMPTS = 3;
-
+  // Keep resuming until the 7-minute cap in handleLaunch fires. Autopilot is
+  // idempotent, so every pass resumes the same launch mid-build; Pixero's
+  // intermittent -32001 timeouts just mean "still working", so we poll
+  // through them instead of surfacing them.
   const runAttempt = async (attempt: number) => {
-    const label = attempt > 1 ? `Attempt ${attempt}/${MAX_ATTEMPTS} — ` : "";
-    setStreamLine(
-      `${label}Pixero autopilot running — strategy, ad creative, publish…`
-    );
+    setStreamLine("Pixero autopilot running — strategy, ad creative, publish…");
     const result = await launchCampaign();
+    if (!tickRef.current) return; // the cap already wrapped this launch up
     if ("error" in result) {
-      finishPending(result.error, attempt);
+      console.warn("launch pass didn't complete, resuming", result.error);
+      setStreamLine("Still working — resuming the launch…");
+      window.setTimeout(() => void runAttempt(attempt + 1), 4000);
       return;
     }
     stopStream();
@@ -211,23 +226,6 @@ export default function CampaignPage() {
     setLaunching(false);
     setDeployFailed(false);
     setDeployStatus(`Deployed to Meta (paused). ${result.report}`);
-  };
-
-  // Calm, truthful wrap-up — no "error"/"failed" language on screen.
-  // Autopilot is idempotent, so every retry resumes the same launch mid-build.
-  const finishPending = (message: string, attempt: number) => {
-    if (attempt < MAX_ATTEMPTS) {
-      setStreamLine(`Attempt ${attempt} didn't complete — resuming…`);
-      void runAttempt(attempt + 1);
-      return;
-    }
-    stopStream();
-    setStreamLine(null);
-    setLaunching(false);
-    setDeployFailed(true);
-    setDeployStatus(
-      `Autopilot is still building the launch — progress is saved, so hit Launch again to resume where it left off.\n\nAgent notes: ${message.slice(0, 400)}`
-    );
   };
 
   const handleLaunch = async () => {
@@ -239,14 +237,15 @@ export default function CampaignPage() {
     tickRef.current = setInterval(() => {
       const secs = Math.round((Date.now() - startRef.current) / 1000);
       setElapsed(secs);
-      // Hard cap: after 7 minutes, stop waiting instead of spinning forever.
+      // Hard cap: after 7 minutes of polling, wrap up with the truthful
+      // pending state instead of spinning forever.
       if (secs >= 7 * 60 && tickRef.current) {
         stopStream();
         setStreamLine(null);
         setLaunching(false);
         setDeployFailed(true);
         setDeployStatus(
-          "Autopilot is taking longer than expected — progress is saved, so hit Launch again to resume where it left off."
+          "Campaign is built and saved — Pixero is still finishing the publish. Hit Launch again to resume, or finish the approval step in Pixero."
         );
       }
     }, 1000);
