@@ -140,6 +140,7 @@ export type Database = {
           phone: string
           price_max: number
           price_min: number
+          profile: Json
           slug: string
           updated_at: string
         }
@@ -162,6 +163,7 @@ export type Database = {
           phone: string
           price_max: number
           price_min: number
+          profile?: Json
           slug?: string
           updated_at?: string
         }
@@ -184,6 +186,7 @@ export type Database = {
           phone?: string
           price_max?: number
           price_min?: number
+          profile?: Json
           slug?: string
           updated_at?: string
         }
@@ -359,6 +362,10 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          delivery_address: string
+          delivery_fee_cents: number
+          delivery_miles: number | null
+          fulfillment: string
           id: number
           lead_id: string | null
           note: string
@@ -378,6 +385,10 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          delivery_address?: string
+          delivery_fee_cents?: number
+          delivery_miles?: number | null
+          fulfillment?: string
           id?: number
           lead_id?: string | null
           note?: string
@@ -397,6 +408,10 @@ export type Database = {
           customer_email?: string
           customer_name?: string
           customer_phone?: string
+          delivery_address?: string
+          delivery_fee_cents?: number
+          delivery_miles?: number | null
+          fulfillment?: string
           id?: number
           lead_id?: string | null
           note?: string

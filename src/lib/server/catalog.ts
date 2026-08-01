@@ -22,6 +22,9 @@ import {
   todayInZone,
   weekdayOf,
 } from "@/lib/agent/dates";
+import type { Bakery, Fulfillment } from "@/lib/types";
+
+import { bakeryFromRow } from "./db";
 
 export interface ChosenOption {
   id: number;
@@ -58,6 +61,12 @@ export interface Shop {
   closeHour: number;
   closedWeekdays: number[];
   products: ShopProduct[];
+  /**
+   * The answers from /setup that the agent has to know but the pricing rules
+   * do not — dietary capability, deposit and cancellation policy, how far they
+   * deliver, what it must never promise. Briefed into the system prompt.
+   */
+  profile: Bakery;
 }
 
 const BAKERY_ID = "default";
@@ -139,6 +148,7 @@ export async function loadShop(now = Date.now()): Promise<Shop> {
     closeHour: b.close_hour,
     closedWeekdays: b.closed_weekdays,
     products,
+    profile: bakeryFromRow(b),
   };
 
   cache = { shop, at: now };
@@ -310,6 +320,17 @@ export interface PhoneOrderLine {
   cakeText: string;
 }
 
+/**
+ * Where the cake is going, priced. Comes from the `quote_delivery` tool, which
+ * is the only thing allowed to work out a fee — this function adds it to the
+ * total but never computes it.
+ */
+export interface PhoneOrderDelivery {
+  address: string;
+  miles: number;
+  feeCents: number;
+}
+
 export interface PhoneOrderInput {
   customerName: string;
   customerPhone: string;
@@ -318,13 +339,21 @@ export interface PhoneOrderInput {
   note: string;
   leadId: string | null;
   lines: PhoneOrderLine[];
+  /** Omitted or null for collection. */
+  delivery?: PhoneOrderDelivery | null;
 }
 
 export interface PhoneOrder {
+  id: number;
   orderNumber: string;
+  /** Cake lines only. */
+  subtotalCents: number;
+  deliveryFeeCents: number;
+  /** What the caller owes: subtotal plus delivery. */
   totalCents: number;
   pickupDate: string;
   pickupSlot: string;
+  fulfillment: Fulfillment;
   lines: Array<{ productName: string; qty: number; options: ChosenOption[]; cakeText: string }>;
 }
 
@@ -341,7 +370,7 @@ export async function createPhoneOrder(
   if (!input.lines.length) return { ok: false, reason: "there is nothing on the order yet" };
 
   let maxLead = 0;
-  let totalCents = 0;
+  let subtotalCents = 0;
   const lines: Array<{
     productId: number;
     productName: string;
@@ -370,7 +399,7 @@ export async function createPhoneOrder(
     if (!selection.ok) return { ok: false, reason: selection.reason };
 
     const unit = unitPriceCents(product, selection.chosen, cakeText);
-    totalCents += unit * qty;
+    subtotalCents += unit * qty;
     maxLead = Math.max(maxLead, product.leadTimeDays);
     lines.push({
       productId: product.id,
@@ -389,6 +418,13 @@ export async function createPhoneOrder(
     return { ok: false, reason: "that is not a pickup time we can do" };
   }
 
+  const delivery = input.delivery ?? null;
+  if (delivery && !shop.profile.fulfillment.includes("delivery")) {
+    return { ok: false, reason: "we are collection only" };
+  }
+  const deliveryFeeCents = delivery ? Math.max(0, Math.round(delivery.feeCents)) : 0;
+  const totalCents = subtotalCents + deliveryFeeCents;
+
   const sb = adminClient();
   const { data: order, error } = await sb
     .from("orders")
@@ -400,10 +436,17 @@ export async function createPhoneOrder(
       customer_name: input.customerName || "Phone customer",
       customer_phone: input.customerPhone,
       customer_email: "",
+      // The columns are named for collection because that is all the
+      // storefront ever did; on a delivery order they carry the date and the
+      // window the van is aiming for, and `fulfillment` says which it is.
       pickup_date: input.pickupDate,
       pickup_slot: input.pickupSlot,
       note: input.note.slice(0, 500),
       total_cents: totalCents,
+      fulfillment: delivery ? "delivery" : "pickup",
+      delivery_address: delivery?.address.slice(0, 300) ?? "",
+      delivery_miles: delivery ? delivery.miles : null,
+      delivery_fee_cents: deliveryFeeCents,
       payment_provider: "phone",
       payment_status: "pay_at_pickup",
       payment_reference: "",
@@ -438,10 +481,14 @@ export async function createPhoneOrder(
   return {
     ok: true,
     order: {
+      id: order.id,
       orderNumber,
+      subtotalCents,
+      deliveryFeeCents,
       totalCents,
       pickupDate: input.pickupDate,
       pickupSlot: input.pickupSlot,
+      fulfillment: delivery ? "delivery" : "pickup",
       lines: lines.map((l) => ({
         productName: l.productName,
         qty: l.qty,

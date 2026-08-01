@@ -3,9 +3,11 @@
 // than destructive, because it runs against the same live row the lead-gen
 // side owns.
 
+import { describeHours } from "@/lib/bakery-profile";
 import { adminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/database.types";
 
-import { seedBakery, seedProducts } from "./seed-data";
+import { seedBakery, seedProducts, seedProfile } from "./seed-data";
 
 export interface SeedResult {
   bakeryCreated: boolean;
@@ -38,16 +40,21 @@ export async function seedShop(): Promise<SeedResult> {
     // storefront and the lead-gen side describe the same business.
     const { error } = await supabase.from("bakeries").insert({
       id: "default",
-      // lead-gen half (mirrors the defaults in src/app/setup/page.tsx)
+      // lead-gen half (mirrors the defaults in src/lib/bakery-profile.ts)
       name: seedBakery.name,
       location: "Austin, TX",
-      cake_types: ["Birthday", "Custom / themed", "Cupcakes"],
+      cake_types: ["Birthday", "Wedding", "Custom / themed", "Cupcakes"],
       price_min: 45,
       price_max: 350,
       fulfillment: ["pickup", "delivery"],
       phone: seedBakery.phone,
-      hours: "Tue-Sun, 8 AM - 6 PM",
+      hours: describeHours(
+        seedBakery.openHour,
+        seedBakery.closeHour,
+        seedBakery.closedWeekdays
+      ),
       monthly_budget: 300,
+      profile: seedProfile as unknown as Json,
       // storefront half
       slug: seedBakery.slug,
       description: seedBakery.description,

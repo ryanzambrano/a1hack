@@ -35,19 +35,32 @@ export interface Recording {
   unbacked: string[];
 }
 
+/**
+ * Facts about the bakery a scenario may need to phrase itself with.
+ *
+ * The demo reset recreates the bakery profile, and it has come back with a
+ * different closing day more than once. A scenario that hardcodes "Monday" is
+ * then testing the calendar rather than the rule, and fails for a reason that
+ * has nothing to do with the agent.
+ */
+export interface ScenarioContext {
+  /** Name of a day the bakery is shut, or null if it never is. */
+  closedDay: string | null;
+}
+
 export interface Scenario {
   name: string;
   /** What the caller says, one entry per turn. */
-  says: string[];
+  says: string[] | ((ctx: ScenarioContext) => string[]);
   /** Canned model replies, consumed in order. Omit for model-free paths. */
-  script?: string[];
+  script?: string[] | ((ctx: ScenarioContext) => string[]);
   /**
    * Fixture this scenario needs. The catalog and the archive are seeded by
    * different scripts and the demo reset clears the catalog, so a run with an
    * empty table must report "skipped, seed it" rather than a pile of
    * assertion failures that look like a broken agent.
    */
-  requires?: "catalog" | "archive";
+  requires?: "catalog" | "archive" | "closedDay";
   expect: (r: Recording) => string[] | Promise<string[]>;
 }
 
@@ -125,8 +138,9 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     name: "a closed day is refused with the real reason and the next open day",
-    says: ["Can I get a chocolate cake on Monday?"],
-    script: [call("check_date", { when: "Monday", product: "chocolate fudge" })],
+    requires: "closedDay",
+    says: (c) => [`Can I get a chocolate cake on ${c.closedDay}?`],
+    script: (c) => [call("check_date", { when: c.closedDay as string, product: "chocolate fudge" })],
     expect: (r) => {
       const [result] = resultsOf(r, "check_date");
       if (!result) return ["expected check_date to run"];
@@ -136,8 +150,11 @@ export const SCENARIOS: Scenario[] = [
         f.push(`expected a closed-day reason, got: ${String(result.reason)}`);
       }
       if (!result.earliestSpoken) f.push("no alternative day was offered");
-      if (/monday/i.test(String(result.earliestSpoken ?? ""))) {
-        f.push("offered another Monday as the alternative");
+      // The alternative must not land on the same closed weekday.
+      const requested = String(result.requested ?? "");
+      const day = requested.split(",")[0];
+      if (day && String(result.earliestSpoken ?? "").startsWith(day)) {
+        f.push(`offered another ${day} as the alternative`);
       }
       return f;
     },
@@ -382,13 +399,20 @@ export async function runScenario(
     cake_order: null,
   });
 
+  const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const closedDay = shop.closedWeekdays.length ? WEEKDAYS[shop.closedWeekdays[0]] : null;
+  const scenarioCtx: ScenarioContext = { closedDay };
+  const says = typeof scenario.says === "function" ? scenario.says(scenarioCtx) : scenario.says;
+  const scriptLines =
+    typeof scenario.script === "function" ? scenario.script(scenarioCtx) : scenario.script;
+
   const state = emptyState();
   const ctx: ToolContext = { leadId, phone: "+15125550148", state };
   const recording: Recording = { turns: [], state, unbacked: [] };
-  const complete = scenario.script ? scriptedModel(scenario.script) : undefined;
+  const complete = scriptLines ? scriptedModel(scriptLines) : undefined;
 
   try {
-    for (const said of scenario.says) {
+    for (const said of says) {
       const turn: BrainTurn = await runTurn({
         utterance: said,
         history: state.history,
@@ -436,12 +460,15 @@ async function availableFixtures(): Promise<Set<string>> {
   const present = new Set<string>();
   if ((catalog.count ?? 0) > 0) present.add("catalog");
   if ((archive.count ?? 0) > 0) present.add("archive");
+  const shop = await loadShop();
+  if (shop.closedWeekdays.length) present.add("closedDay");
   return present;
 }
 
 const SEED_HINT: Record<string, string> = {
   catalog: "no active products — seed the storefront catalog (POST /api/shop/seed)",
-  archive: "no archive cakes — run `node scripts/seed-archive.mjs`",
+  archive: "no archive cakes — run `node scripts/ingest-archive.mjs <folder>`",
+  closedDay: "this bakery is never closed, so there is no closed day to refuse",
 };
 
 export async function runAll(options: { keep?: boolean } = {}): Promise<{

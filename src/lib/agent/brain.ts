@@ -56,6 +56,8 @@ function knownSoFar(ctx: ToolContext): string {
   const lines: string[] = [];
   if (d.customerName) lines.push(`Caller's name: ${d.customerName}`);
   if (d.occasion) lines.push(`Occasion: ${d.occasion}`);
+  if (d.recipient) lines.push(`Who it is for: ${d.recipient}`);
+  if (d.designNotes) lines.push(`The look they described: ${d.designNotes}`);
   if (d.guests) lines.push(`Guests: ${d.guests}`);
   if (d.productName) {
     const options = Object.entries(d.selections)
@@ -81,8 +83,87 @@ function knownSoFar(ctx: ToolContext): string {
         : `Chose design ${d.position} (${d.title}), ${speakMoney(d.lowCents)} to ${speakMoney(d.highCents)}`
     );
   }
+  if (ctx.state.delivery) {
+    const v = ctx.state.delivery;
+    lines.push(
+      `Delivery to ${v.address}, ${v.miles} miles out, priced at ${speakMoney(v.feeCents)}.`
+    );
+  } else if (d.fulfillment === "delivery") {
+    lines.push("They want it delivered — the address has NOT been priced yet.");
+  }
   if (ctx.state.booked) lines.push(`ALREADY BOOKED: ${ctx.state.booked.orderNumber}`);
+  if (ctx.state.payment) {
+    const p = ctx.state.payment;
+    lines.push(
+      p.status === "awaiting_payment"
+        ? `A payment link for ${speakMoney(p.amountCents)} has been texted to them. Do NOT ask for payment again.`
+        : `PAID: ${speakMoney(p.amountCents)}${p.portion === "deposit" ? " deposit" : ""}. Do NOT take payment again.`
+    );
+  }
   return lines.length ? lines.join("\n") : "Nothing yet.";
+}
+
+/**
+ * The answers from /setup, turned into facts the agent may state without a
+ * tool call. These are the questions callers actually ask — can you do vegan,
+ * how much notice, do you deliver to me, how big a deposit — and every one the
+ * agent cannot answer is a call the bakery has to make back. Unanswered
+ * questions are left out rather than guessed at.
+ */
+function bakeryBrief(p: Shop["profile"]): string {
+  const lines: string[] = [];
+  const list = (xs: string[]) => xs.join(", ").toLowerCase();
+
+  if (p.description) lines.push(p.description);
+  if (p.differentiators) lines.push(`What sets them apart: ${p.differentiators}`);
+  if (p.signatureItems) lines.push(`Signature bakes: ${p.signatureItems}`);
+
+  lines.push(
+    `Custom cakes need ${p.leadTimeDays} days' notice, weddings ${p.weddingLeadTimeDays} days.` +
+      (p.rushAvailable
+        ? ` Rush work is sometimes possible for a $${p.rushFeeUsd} fee — offer it as a maybe the baker confirms, never as a yes.`
+        : " Rush orders are not possible; offer the earliest date a tool gives you instead.")
+  );
+
+  if (p.flavors.length || p.fillings.length) {
+    lines.push(
+      `The kitchen works in these flavors: ${list(p.flavors)}. Fillings and frostings: ${list(p.fillings)}. This is what they CAN make on a custom cake — it is not a menu, and prices still come only from tools.`
+    );
+  }
+  if (p.decorations.length) lines.push(`Decoration they do in-house: ${list(p.decorations)}.`);
+  lines.push(
+    `Sizes run from ${p.minServings} to ${p.maxServings} servings, up to ${p.maxTiers} tiers.`
+  );
+
+  if (p.dietaryOptions.length) {
+    lines.push(`Dietary versions they can bake: ${list(p.dietaryOptions)}.`);
+  }
+  if (p.sharedKitchen) {
+    lines.push(
+      `ALLERGIES: everything is baked in a shared kitchen that also handles ${list(p.allergensOnSite)}. If a caller mentions an allergy, say that plainly before agreeing to anything.`
+    );
+  }
+
+  if (p.fulfillment.includes("delivery")) {
+    lines.push(
+      `Delivery goes out ${p.deliveryRadiusMiles} miles from the shop, $${p.deliveryFeeUsd}, on orders over $${p.deliveryMinimumUsd}. Further out, it is pickup only.`
+    );
+  } else {
+    lines.push("Pickup only — they do not deliver.");
+  }
+  if (p.weddingSetup) lines.push("They set up and stack wedding cakes at the venue.");
+  if (p.tastingsOffered) lines.push("Wedding tastings are available — offer one to wedding callers.");
+
+  lines.push(
+    `Money: a ${p.depositPercent}% deposit confirms a custom order, free cancellation up to ${p.cancellationDays} days before pickup. They take ${list(p.paymentMethods)}. Anything over about $${p.customQuoteThresholdUsd} gets a written quote from the bakery rather than a figure from you.`
+  );
+
+  if (p.doNotPromise) lines.push(`NEVER promise: ${p.doNotPromise}`);
+  if (p.escalationContact) {
+    lines.push(`When a human is needed, the handoff goes to ${p.escalationContact}.`);
+  }
+
+  return lines.join("\n");
 }
 
 function systemPrompt(shop: Shop, ctx: ToolContext, now: Date): string {
@@ -91,11 +172,15 @@ function systemPrompt(shop: Shop, ctx: ToolContext, now: Date): string {
 
 Today is ${speakDate(today)}. Opening hours: ${shop.hours}.
 
+THE BAKERY YOU WORK FOR
+${bakeryBrief(shop.profile)}
+
 HOW YOU SPEAK
 You are on a live phone call and your words are read aloud by a synthetic voice.
 - One or two short sentences, then stop. Ask exactly ONE question at a time.
 - Never use emoji, markdown, asterisks, bullet points or numbered lists.
-- Sound like a friendly person at a bakery counter, not a form.
+- Sound like a friendly person at a bakery counter, not a form. The bakery
+  describes its own voice as: ${shop.profile.tone.toLowerCase()}.
 - Never re-ask something you already know. What you know is listed below.
 - Speech-to-text garbles names and numbers, so prefer closed questions
   ("Chocolate or vanilla?") over open ones where you reasonably can.
@@ -189,6 +274,8 @@ function salvage(raw: string): string {
 
 /** The greeting. Fixed text, so the phone is answered with zero model latency. */
 export function openingLine(shop: Shop): string {
+  const custom = shop.profile?.greeting?.trim();
+  if (custom) return sanitizeForSpeech(custom);
   return `Thanks for calling ${shop.name}, this is the order line. What can I get baked for you?`;
 }
 

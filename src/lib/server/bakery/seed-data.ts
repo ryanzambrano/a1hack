@@ -12,6 +12,10 @@
 // "Tue-Sun, 8 AM - 6 PM" hours are what closedWeekdays [1] and the 8/18 open
 // hours encode here.
 
+// Relative, with extensions: pricing.test.ts imports this file and Node runs
+// it directly, without the "@/" alias.
+import { PROFILE_DEFAULTS, type BakeryProfileDetail } from "../../bakery-profile.ts";
+
 import type { ShopBakery } from "./types";
 
 export type SeedOption = {
@@ -31,6 +35,87 @@ export type SeedProduct = {
   canHaveCakeText: boolean;
   cakeTextPriceCents: number;
   options: SeedOption[];
+};
+
+/**
+ * The demo bakery's answers to the setup questionnaire. A half-empty profile
+ * makes the generated ad and the agent's brief look thin in a fresh database,
+ * so the seed answers every question the way a real shop would.
+ */
+export const seedProfile: BakeryProfileDetail = {
+  ...PROFILE_DEFAULTS,
+  website: "sweetstreetbakery.com",
+  instagram: "@sweetstreetatx",
+  foundedYear: 2014,
+  flavors: [
+    "Vanilla bean",
+    "Chocolate fudge",
+    "Red velvet",
+    "Carrot",
+    "Lemon",
+    "Tres leches",
+    "Funfetti",
+  ],
+  fillings: [
+    "Swiss meringue buttercream",
+    "Cream cheese",
+    "Chocolate ganache",
+    "Salted caramel",
+    "Fresh berries",
+  ],
+  decorations: [
+    "Hand-piped buttercream",
+    "Fondant finish",
+    "Sculpted / 3D shapes",
+    "Sugar flowers",
+    "Edible photo print",
+    "Drip & ganache",
+  ],
+  maxTiers: 4,
+  minServings: 8,
+  maxServings: 120,
+  pricePerServing: 7,
+  signatureItems: "Berry cream layer cake, brown-butter carrot cake, tres leches sheet cake",
+  tastingsOffered: true,
+  dietaryOptions: ["Gluten-free", "Vegan", "Egg-free"],
+  allergensOnSite: ["Wheat / gluten", "Eggs", "Dairy", "Tree nuts", "Soy"],
+  sharedKitchen: true,
+  leadTimeDays: 3,
+  weddingLeadTimeDays: 28,
+  rushAvailable: true,
+  rushFeeUsd: 40,
+  weeklyCakeCapacity: 30,
+  peakSeasons: ["Mother's Day", "Graduation (May–June)", "Wedding season (June–Sep)", "Christmas & New Year"],
+  deliveryRadiusMiles: 15,
+  deliveryPricing: "per_mile",
+  deliveryPerMileUsd: 2,
+  deliveryBaseFeeUsd: 5,
+  deliveryFeeUsd: 20,
+  deliveryMinimumUsd: 60,
+  // 1408 South Congress Ave, Austin — pinned rather than geocoded so a fresh
+  // database can quote a delivery on the very first call.
+  latitude: 30.2504,
+  longitude: -97.7501,
+  weddingSetup: true,
+  nationwideShipping: false,
+  depositPercent: 50,
+  paymentMethods: ["Card in store", "Payment link", "Cash"],
+  cancellationDays: 7,
+  customQuoteThresholdUsd: 300,
+  tone: "Warm & homey",
+  greeting: "",
+  differentiators:
+    "Everything is scratch-baked each morning, and every custom cake is sketched with the customer before it is quoted.",
+  doNotPromise:
+    "A same-day wedding cake, a guaranteed allergen-free cake, or any discount over 10%.",
+  escalationContact: "Nadia, head baker — (512) 555-0148",
+  targetCustomers: [
+    "Parents planning kids' parties",
+    "Couples & wedding planners",
+    "Offices & corporate gifting",
+  ],
+  adRadiusMiles: 20,
+  currentOffer: "",
 };
 
 export const seedBakery: Omit<ShopBakery, "id"> = {

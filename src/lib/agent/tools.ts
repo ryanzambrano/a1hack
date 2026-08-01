@@ -38,6 +38,11 @@ import {
   vocabularyOf,
 } from "@/lib/archive/retrieval";
 import { sendSms } from "@/lib/server/a1";
+import { appBaseUrl } from "@/lib/archive/proposals";
+import { quoteDelivery, zoneFromProfile } from "@/lib/delivery";
+import { geocode, isPlaced, milesBetween } from "@/lib/server/geo";
+import { getPaymentProvider } from "@/lib/server/bakery/payments";
+import { adminClient } from "@/lib/supabase/admin";
 import { BAKERY_TZ, resolveDatePhrase, speakDate, speakSlot, todayInZone } from "./dates";
 import type { CallState } from "./ontology";
 import { speakList, speakMoney, speakOrderNumber } from "./speech";
@@ -53,7 +58,9 @@ export type ToolName =
   | "find_cake"
   | "price_cake"
   | "check_date"
+  | "quote_delivery"
   | "book_order"
+  | "take_payment"
   | "find_designs"
   | "pick_design"
   | "escalate";
@@ -344,6 +351,17 @@ async function bookOrder(
   if (!draft.productId) return { ok: false, reason: "No cake chosen yet." };
   if (!draft.pickupDate) return { ok: false, reason: "No pickup date confirmed yet — call check_date." };
 
+  // A caller who has asked for delivery must not be booked as a collection —
+  // they would turn up to nothing, or nobody would drive. The fee has to have
+  // been priced by quote_delivery before the total can be right.
+  if (draft.fulfillment === "delivery" && !ctx.state.delivery) {
+    return {
+      ok: false,
+      reason: "This is a delivery and the address has not been priced yet.",
+      note: "Ask for the delivery address and call quote_delivery first.",
+    };
+  }
+
   const slots = pickupSlots(shop);
   const slot = args.pickup_time ? matchSlot(slots, args.pickup_time) : draft.pickupSlot;
   if (!slot) {
@@ -356,13 +374,17 @@ async function bookOrder(
   }
   draft.pickupSlot = slot;
 
+  const delivery = ctx.state.delivery;
   const result = await createPhoneOrder(
     {
       customerName: draft.customerName ?? "Phone customer",
       customerPhone: ctx.phone,
       pickupDate: draft.pickupDate,
       pickupSlot: slot,
-      note: draft.notes,
+      note: [draft.notes, draft.designNotes && `Design: ${draft.designNotes}`]
+        .filter(Boolean)
+        .join(". ")
+        .slice(0, 500),
       leadId: ctx.leadId,
       lines: [
         {
@@ -372,6 +394,13 @@ async function bookOrder(
           cakeText: draft.cakeText,
         },
       ],
+      delivery: delivery
+        ? {
+            address: delivery.resolvedAddress || delivery.address,
+            miles: delivery.miles,
+            feeCents: delivery.feeCents,
+          }
+        : null,
     },
     ctx.now ?? new Date()
   );
@@ -379,19 +408,287 @@ async function bookOrder(
   if (!result.ok) return { ok: false, reason: result.reason };
 
   ctx.state.booked = {
+    orderId: result.order.id,
     orderNumber: result.order.orderNumber,
     totalCents: result.order.totalCents,
     pickupDate: result.order.pickupDate,
     pickupSlot: result.order.pickupSlot,
+    fulfillment: result.order.fulfillment,
   };
 
+  const delivering = result.order.fulfillment === "delivery";
   return {
     ok: true,
     orderNumber: result.order.orderNumber,
     orderNumberSpoken: speakOrderNumber(result.order.orderNumber),
+    fulfillment: result.order.fulfillment,
+    ...(delivering
+      ? {
+          cakeTotal: speakMoney(result.order.subtotalCents),
+          deliveryFee: speakMoney(result.order.deliveryFeeCents),
+          deliveringTo: delivery?.address ?? "",
+        }
+      : {}),
+    // The one figure the caller owes, delivery included.
     total: speakMoney(result.order.totalCents),
-    pickupSpoken: `${speakDate(result.order.pickupDate)}, ${speakSlot(result.order.pickupSlot)}`,
-    note: "Order is placed. Read back the order number, then close warmly.",
+    [delivering ? "deliverySpoken" : "pickupSpoken"]:
+      `${speakDate(result.order.pickupDate)}, ${speakSlot(result.order.pickupSlot)}`,
+    note:
+      "Order is placed. Read back the order number and the total, then offer to take payment now with take_payment, or say they can pay on the day.",
+  };
+}
+
+/* ------------------------------- delivery --------------------------------- */
+
+/**
+ * Price a delivery to a real address.
+ *
+ * The bakery drew the zone in /setup — how far it will drive and what it
+ * charges per mile — and this is the only thing allowed to turn that into a
+ * figure. Distance is measured from the shop's own coordinates to the
+ * caller's, so "do you deliver to me?" gets a yes or a no on the call instead
+ * of a callback.
+ *
+ * A caller reads an address out loud badly, so a failed lookup is an ordinary
+ * outcome: it comes back as a question to ask, never as a guess at the fee.
+ */
+async function quoteDeliveryTool(
+  args: { address?: string },
+  ctx: ToolContext
+): Promise<ToolResult> {
+  const shop = await loadShop();
+  const p = shop.profile;
+
+  if (!p.fulfillment.includes("delivery")) {
+    return {
+      ok: false,
+      reason: "We do not deliver — collection from the shop only.",
+      note: "Say so plainly and offer collection. Do not promise to ask about it.",
+    };
+  }
+
+  const address = String(args.address ?? "").trim();
+  if (address.length < 4) {
+    return {
+      ok: false,
+      reason: "No address to price yet.",
+      note: "Ask for the street and the town, then call this again.",
+    };
+  }
+
+  const zone = zoneFromProfile(p);
+
+  // Without coordinates for the shop there is no distance to measure. A flat
+  // or free zone does not need one; a per-mile zone genuinely cannot be
+  // priced, and saying so beats inventing a number.
+  if (!isPlaced(p)) {
+    if (zone.pricing === "per_mile") {
+      return {
+        ok: false,
+        reason: "The shop's address has not been placed on the map yet.",
+        note: "Take the address down, say the bakery will confirm the delivery fee, and carry on with the rest of the order.",
+      };
+    }
+  }
+
+  const shopPoint = { lat: p.latitude, lon: p.longitude };
+  const found = isPlaced(p) ? await geocode(address, shopPoint) : null;
+
+  if (!found && zone.pricing === "per_mile") {
+    return {
+      ok: false,
+      reason: "That address did not come back on the map.",
+      note: "Ask them to say the street number and the town again. If it still fails, take it down and say the bakery will confirm the delivery fee.",
+    };
+  }
+
+  // A flat or free zone is distance-independent, so an address we could not
+  // place is still quotable — the fee is the same anywhere they will drive.
+  const miles = found ? milesBetween(shopPoint, found) : 0;
+  const quote = quoteDelivery(zone, miles, ctx.state.quotedCents);
+
+  // Every figure this produced is tool-computed, so the agent may say it —
+  // including on the refusal paths, where the minimum order IS the answer.
+  ctx.state.offeredCents = [
+    ...(ctx.state.offeredCents ?? []),
+    quote.feeCents,
+    Math.round(zone.minimumOrderUsd * 100),
+  ];
+
+  if (!quote.ok) {
+    // Not deliverable as things stand: keep the order on collection so a
+    // booking cannot silently go out as a delivery nobody priced.
+    ctx.state.delivery = null;
+    ctx.state.draft.fulfillment = "pickup";
+    return {
+      ok: false,
+      reason: quote.reason,
+      ...(found ? { miles: quote.miles } : {}),
+      outsideZone: quote.outsideZone,
+      belowMinimum: quote.belowMinimum,
+      ...(quote.belowMinimum
+        ? {
+            minimumOrder: speakMoney(Math.round(zone.minimumOrderUsd * 100)),
+            deliveryFeeIfTheyQualify: speakMoney(quote.feeCents),
+            note: "Say what the minimum is and offer to add something, or offer collection.",
+          }
+        : { note: "Say how far out they are and offer collection at the shop instead." }),
+    };
+  }
+
+  ctx.state.draft.fulfillment = "delivery";
+  ctx.state.delivery = {
+    address,
+    resolvedAddress: found?.label ?? address,
+    miles: quote.miles,
+    feeCents: quote.feeCents,
+  };
+
+  const subtotal = ctx.state.quotedCents;
+  return {
+    ok: true,
+    deliveringTo: found?.label ?? address,
+    ...(found ? { miles: quote.miles } : {}),
+    // The only delivery figure the agent may state.
+    deliveryFee: speakMoney(quote.feeCents),
+    ...(subtotal !== null ? { totalWithDelivery: speakMoney(subtotal + quote.feeCents) } : {}),
+    note:
+      quote.feeCents === 0
+        ? "Delivery is free to them. Confirm the address back and carry on."
+        : "Give the delivery fee, and the total with it if the cake is already priced. Read the address back before booking.",
+  };
+}
+
+/* ------------------------------- payment ---------------------------------- */
+
+/**
+ * Take the money, or text a link that does.
+ *
+ * The provider is the mock one in server/bakery/payments.ts — nothing is
+ * really charged and no card number is ever collected, transcribed or stored.
+ * The agent may ask the caller to confirm the last four digits so the receipt
+ * reads like a receipt, and that is all it is allowed to hear.
+ */
+async function takePayment(
+  args: { method?: string; portion?: string; card_last4?: string },
+  ctx: ToolContext
+): Promise<ToolResult> {
+  const booked = ctx.state.booked;
+  if (!booked?.orderId) {
+    return {
+      ok: false,
+      reason: "There is no order to charge yet.",
+      note: "Book the order first with book_order, then offer to take payment.",
+    };
+  }
+  if (ctx.state.payment) {
+    return {
+      ok: false,
+      reason: `Payment was already handled on this call — ${ctx.state.payment.status.replace(/_/g, " ")}.`,
+      note: "Do not take it twice. Reassure them it is done.",
+    };
+  }
+
+  const shop = await loadShop();
+  const method = args.method === "link" ? "link" : "card";
+  const portion = args.portion === "deposit" ? "deposit" : "full";
+  const depositPercent = Math.min(100, Math.max(1, shop.profile.depositPercent || 50));
+  const amountCents =
+    portion === "deposit"
+      ? Math.round((booked.totalCents * depositPercent) / 100)
+      : booked.totalCents;
+
+  const last4 = String(args.card_last4 ?? "").replace(/\D/g, "").slice(-4);
+  const sb = adminClient();
+
+  if (method === "link") {
+    const url = `${appBaseUrl()}/pay/${booked.orderNumber}`;
+    const sent = await sendSms(
+      ctx.phone,
+      `${shop.name}: pay for order ${booked.orderNumber} — ${speakMoney(amountCents)}. ${url}`
+    );
+    await sb
+      .from("orders")
+      .update({
+        payment_provider: "link",
+        payment_status: "awaiting_payment",
+        payment_reference: url,
+      })
+      .eq("id", booked.orderId);
+
+    ctx.state.payment = {
+      method,
+      portion,
+      amountCents,
+      status: "awaiting_payment",
+      reference: url,
+    };
+    return {
+      ok: true,
+      textedTo: sent ? ctx.phone : null,
+      smsDelivered: sent,
+      amount: speakMoney(amountCents),
+      note: sent
+        ? "The payment link is on its way to their phone. Say it is nothing to do now and the cake is already in the book."
+        : "The text did not go through. Say the bakery will send the link, and that the order is safe either way.",
+    };
+  }
+
+  const charge = await getPaymentProvider().charge({
+    totalCents: amountCents,
+    // The provider only reads the total; the order is already written and
+    // priced, so there is no draft to rebuild for it.
+    orderDraft: {
+      customer: { name: booked.orderNumber, phone: ctx.phone, email: "" },
+      pickupDate: booked.pickupDate,
+      pickupSlot: booked.pickupSlot,
+      note: "",
+      totalCents: amountCents,
+      lines: [],
+    },
+  });
+
+  if (!charge.ok) {
+    return {
+      ok: false,
+      reason: "The card did not go through.",
+      note: "Say it did not go through, and offer to text a payment link instead.",
+    };
+  }
+
+  const status = portion === "deposit" ? "deposit_paid" : charge.status;
+  const { error } = await sb
+    .from("orders")
+    .update({
+      payment_provider: "phone_card_demo",
+      payment_status: status,
+      payment_reference: charge.reference,
+    })
+    .eq("id", booked.orderId);
+  if (error) return { ok: false, reason: "The payment did not save on our end." };
+
+  ctx.state.payment = { method, portion, amountCents, status, reference: charge.reference };
+
+  void sendSms(
+    ctx.phone,
+    `${shop.name}: ${speakMoney(amountCents)} ${
+      portion === "deposit" ? "deposit " : ""
+    }received for order ${booked.orderNumber}${last4 ? ` (card ending ${last4})` : ""}. Ref ${charge.reference}.`
+  );
+
+  return {
+    ok: true,
+    amount: speakMoney(amountCents),
+    portion,
+    ...(portion === "deposit"
+      ? {
+          balance: speakMoney(booked.totalCents - amountCents),
+          note: `The ${depositPercent}% deposit is paid. Say the balance is due on the day, and that a receipt is on its way by text.`,
+        }
+      : {
+          note: "Paid in full. Say it went through and that a receipt is on its way by text. Do not read the reference out.",
+        }),
+    ...(last4 ? { cardEnding: last4 } : {}),
   };
 }
 
@@ -467,7 +764,13 @@ async function buildProposal(
  * that guidance, delivered in seconds instead of a day.
  */
 async function findDesigns(
-  args: { description?: string; occasion?: string; guests?: number; budget?: number },
+  args: {
+    description?: string;
+    occasion?: string;
+    for_whom?: string;
+    guests?: number;
+    budget?: number;
+  },
   ctx: ToolContext
 ): Promise<ToolResult> {
   const shop = await loadShop();
@@ -481,6 +784,11 @@ async function findDesigns(
   const budgetCents = Number.isFinite(args.budget) ? Math.round(Number(args.budget) * 100) : null;
   if (guests) ctx.state.draft.guests = guests;
   if (args.occasion) ctx.state.draft.occasion = String(args.occasion).slice(0, 60);
+  if (args.for_whom) ctx.state.draft.recipient = String(args.for_whom).slice(0, 80);
+  // The brief the baker reads. Kept in the caller's own words rather than the
+  // retrieval system's tidied-up themes, because "her favourite is the blue
+  // dinosaur one" is the sentence that gets the cake right.
+  if (args.description) ctx.state.draft.designNotes = String(args.description).slice(0, 300);
 
   const brief = briefFromText(args.description ?? "", archive, {
     occasion: args.occasion ?? ctx.state.draft.occasion ?? null,
@@ -635,7 +943,9 @@ const HANDLERS = {
   find_cake: findCake,
   price_cake: priceCake,
   check_date: checkDate,
+  quote_delivery: quoteDeliveryTool,
   book_order: bookOrder,
+  take_payment: takePayment,
   find_designs: findDesigns,
   pick_design: pickDesign,
   escalate,
@@ -704,15 +1014,59 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
-    name: "book_order",
+    name: "quote_delivery",
     description:
-      "Place the order. Only after the caller has confirmed a read-back of the cake, the price, and the pickup day and time.",
+      "Do we deliver to this address, and what does it cost? THE ONLY SOURCE OF DELIVERY FEES AND DISTANCES — never guess whether somewhere is in range. Call it as soon as a caller asks about delivery or gives an address; the fee it returns goes on the order total automatically when you book.",
     parameters: {
       type: "object",
       properties: {
-        pickup_time: { type: "string", description: "Pickup window the caller picked." },
+        address: {
+          type: "string",
+          description:
+            "Where the cake is going, as the caller said it — street and number plus the town or postcode.",
+        },
+      },
+      required: ["address"],
+    },
+  },
+  {
+    name: "book_order",
+    description:
+      "Place the order. Only after the caller has confirmed a read-back of the cake, the price, and the day and time. If it is a delivery, quote_delivery must have run first — the fee is added to the total here.",
+    parameters: {
+      type: "object",
+      properties: {
+        pickup_time: {
+          type: "string",
+          description: "The window the caller picked, for collection or for the delivery.",
+        },
         customer_name: { type: "string" },
         note: { type: "string", description: "Anything the baker needs to know." },
+      },
+    },
+  },
+  {
+    name: "take_payment",
+    description:
+      "Take payment for an order that has already been booked: a card on the call, or a payment link texted to them. Offer it once the order number has been read back. NEVER ask for, repeat or write down a full card number — only the last four digits, and only for the receipt.",
+    parameters: {
+      type: "object",
+      properties: {
+        method: {
+          type: "string",
+          enum: ["card", "link"],
+          description: "'card' to take it on the call, 'link' to text them one to pay later.",
+        },
+        portion: {
+          type: "string",
+          enum: ["full", "deposit"],
+          description:
+            "'deposit' takes the bakery's standard deposit percentage and leaves the balance for the day.",
+        },
+        card_last4: {
+          type: "string",
+          description: "Last four digits only, if they gave them, for the receipt.",
+        },
       },
     },
   },
@@ -727,7 +1081,15 @@ export const TOOL_SCHEMAS = [
           type: "string",
           description: "What they described, in their words — theme, colours, style.",
         },
-        occasion: { type: "string", description: "birthday, wedding, christening, and so on." },
+        occasion: {
+          type: "string",
+          description:
+            "birthday, christening, retirement, graduation, gender reveal, anniversary, and so on.",
+        },
+        for_whom: {
+          type: "string",
+          description: "Who it is for and the age they are turning, e.g. 'Maya, turning 6'.",
+        },
         guests: { type: "number", description: "How many people it needs to feed." },
         budget: { type: "number", description: "Budget in whole dollars, if they gave one." },
       },

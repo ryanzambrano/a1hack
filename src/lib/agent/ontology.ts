@@ -1,3 +1,4 @@
+import type { Fulfillment } from "@/lib/types";
 import { speakDate } from "./dates";
 import { speakMoney } from "./speech";
 
@@ -20,10 +21,43 @@ export interface OrderDraft {
   cakeText: string;
   guests: number | null;
   occasion: string | null;
+  /** Who it is for and how old they are turning — a custom brief needs both. */
+  recipient: string | null;
+  /** The look in the caller's own words: theme, characters, colours, finish. */
+  designNotes: string;
   pickupDate: string | null;
   pickupSlot: string | null;
+  /** Collection or a van. Set by quote_delivery, defaults to collection. */
+  fulfillment: Fulfillment;
   customerName: string | null;
   notes: string;
+}
+
+/**
+ * A delivery the tools have actually priced.
+ *
+ * Distance and fee both come from `quote_delivery`; nothing here is ever
+ * filled in from the model's reading of the conversation, because the fee
+ * lands on the order total and on the caller's card.
+ */
+export interface DeliveryPlan {
+  address: string;
+  /** As the geocoder rendered it — what the driver will actually be given. */
+  resolvedAddress: string;
+  /** Straight-line miles from the shop. */
+  miles: number;
+  feeCents: number;
+}
+
+export interface PaymentRecord {
+  /** "card" for a simulated charge on the call, "link" for one texted over. */
+  method: "card" | "link";
+  /** Whole balance, or the deposit percentage from the bakery's profile. */
+  portion: "full" | "deposit";
+  amountCents: number;
+  /** What the provider called it: paid, or awaiting the texted link. */
+  status: string;
+  reference: string;
 }
 
 export interface Escalation {
@@ -33,10 +67,14 @@ export interface Escalation {
 }
 
 export interface BookedOrder {
+  /** Row id, so a later payment can find the order it belongs to. */
+  orderId: number;
   orderNumber: string;
+  /** Everything the caller owes: the cake, plus delivery if it is being driven. */
   totalCents: number;
   pickupDate: string;
   pickupSlot: string;
+  fulfillment: Fulfillment;
 }
 
 export interface CallState {
@@ -73,6 +111,10 @@ export interface CallState {
     /** Low-confidence comps mean a human prices it, not the agent. */
     needsKitchenReview: boolean;
   } | null;
+  /** Priced by quote_delivery. Null means collection, or not asked yet. */
+  delivery: DeliveryPlan | null;
+  /** Written by take_payment once money has actually been asked for. */
+  payment: PaymentRecord | null;
   escalation: Escalation | null;
   booked: BookedOrder | null;
   startedAt: number;
@@ -95,8 +137,11 @@ export function emptyDraft(): OrderDraft {
     cakeText: "",
     guests: null,
     occasion: null,
+    recipient: null,
+    designNotes: "",
     pickupDate: null,
     pickupSlot: null,
+    fulfillment: "pickup",
     customerName: null,
     notes: "",
   };
@@ -127,6 +172,8 @@ export function emptyState(startedAt = Date.now()): CallState {
     offeredCents: [],
     proposalCode: null,
     chosenDesign: null,
+    delivery: null,
+    payment: null,
     escalation: null,
     booked: null,
     startedAt,
@@ -149,21 +196,44 @@ export function orderRows(state: CallState): Array<[string, string]> {
   const d = state.draft;
   const rows: Array<[string, string]> = [];
 
+  const delivering = d.fulfillment === "delivery";
+
   if (state.booked) {
     rows.push(["Order", state.booked.orderNumber]);
     rows.push(["Total", speakMoney(state.booked.totalCents)]);
-    rows.push(["Pickup", `${speakDate(state.booked.pickupDate)}, ${state.booked.pickupSlot}`]);
+    rows.push([
+      delivering ? "Deliver" : "Pickup",
+      `${speakDate(state.booked.pickupDate)}, ${state.booked.pickupSlot}`,
+    ]);
   }
   if (d.customerName) rows.push(["Customer", d.customerName]);
   if (d.occasion) rows.push(["Occasion", d.occasion]);
+  if (d.recipient) rows.push(["For", d.recipient]);
   if (d.guests) rows.push(["Guests", String(d.guests)]);
   if (d.productName) rows.push(["Cake", d.productName]);
   for (const [group, value] of Object.entries(d.selections)) rows.push([group, value]);
+  if (d.designNotes) rows.push(["Design", d.designNotes]);
   if (d.qty > 1) rows.push(["Quantity", String(d.qty)]);
   if (d.cakeText) rows.push(["Writing", `"${d.cakeText}"`]);
   if (!state.booked && d.pickupDate) rows.push(["Wanted for", speakDate(d.pickupDate)]);
   if (!state.booked && state.quotedCents !== null) {
     rows.push(["Quoted", speakMoney(state.quotedCents)]);
+  }
+  if (state.delivery) {
+    rows.push(["Deliver to", state.delivery.address]);
+    rows.push([
+      "Delivery",
+      `${speakMoney(state.delivery.feeCents)} · ${state.delivery.miles} miles out`,
+    ]);
+  } else if (delivering) {
+    rows.push(["Fulfillment", "Delivery — address not confirmed"]);
+  }
+  if (state.payment) {
+    const p = state.payment;
+    rows.push([
+      p.portion === "deposit" ? "Deposit" : "Paid",
+      `${speakMoney(p.amountCents)} · ${p.status.replace(/_/g, " ")}`,
+    ]);
   }
   if (state.escalation) rows.push(["Needs a person", state.escalation.reason]);
   return rows;
@@ -181,6 +251,7 @@ export function shortSummary(state: CallState): string | null {
     d.productName,
     d.guests ? `${d.guests} guests` : null,
     d.pickupDate ? speakDate(d.pickupDate) : null,
+    state.delivery ? `delivery ${speakMoney(state.delivery.feeCents)}` : null,
   ].filter(Boolean);
   return bits.length ? bits.join(" · ") : null;
 }
@@ -220,6 +291,8 @@ export function stateFromExtractedOrder(extracted: {
   state.draft.occasion = real(o.eventType);
   state.draft.guests = Number.isFinite(o.guests) ? Number(o.guests) : null;
   state.draft.productName = real(o.flavor) ?? real(o.design);
+  state.draft.designNotes = real(o.design) ?? "";
+  if (/deliver/i.test(o.fulfillment ?? "")) state.draft.fulfillment = "delivery";
 
   for (const [group, value] of [
     ["Size", o.size],

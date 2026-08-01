@@ -262,6 +262,15 @@ export function Textarea({ className, ...rest }: ComponentProps<"textarea">) {
   return <textarea {...rest} className={cx(CONTROL, "py-2", className)} />;
 }
 
+/** Native select in the control skin. Chevron is the OS one — cheap and correct. */
+export function Select({ className, children, ...rest }: ComponentProps<"select">) {
+  return (
+    <select {...rest} className={cx(CONTROL, "h-9 cursor-pointer pr-8", className)}>
+      {children}
+    </select>
+  );
+}
+
 /** Label + control + optional hint, stacked on the 4px grid. */
 export function Field({
   label,

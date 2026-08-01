@@ -129,13 +129,51 @@ export interface CampaignCopy {
   audience: string;
 }
 
+/**
+ * Everything from the setup questionnaire that could plausibly end up in an
+ * ad. Generic bakery ads are indistinguishable from each other; the specifics
+ * — an ube tres leches, sugar flowers, "we deliver 15 miles", a 3-day turnaround
+ * — are the only thing that makes one worth clicking, so they all go in.
+ */
+function campaignBrief(b: Bakery): string {
+  const parts = [
+    `Bakery: ${b.name}, ${b.location} (${b.address}).`,
+    b.description && `About them: ${b.description}`,
+    b.foundedYear > 0 && `Baking here since ${b.foundedYear}.`,
+    b.differentiators && `What sets them apart: ${b.differentiators}`,
+    b.signatureItems && `Signature bakes: ${b.signatureItems}`,
+    `Cake types: ${b.cakeTypes.join(", ")}.`,
+    b.flavors.length && `Flavors: ${b.flavors.join(", ")}.`,
+    b.decorations.length && `Decoration: ${b.decorations.join(", ")}.`,
+    b.dietaryOptions.length && `Dietary options: ${b.dietaryOptions.join(", ")}.`,
+    `Prices $${b.priceMin}–$${b.priceMax}, about $${b.pricePerServing} per serving. Serves ${b.minServings}–${b.maxServings}, up to ${b.maxTiers} tiers.`,
+    `Fulfillment: ${b.fulfillment.join(", ")}${
+      b.fulfillment.includes("delivery")
+        ? ` (delivery ${b.deliveryRadiusMiles} miles, $${b.deliveryFeeUsd}, min order $${b.deliveryMinimumUsd})`
+        : ""
+    }.`,
+    `Notice needed: ${b.leadTimeDays} days for custom cakes, ${b.weddingLeadTimeDays} for weddings.${
+      b.rushAvailable ? " Rush orders possible." : ""
+    }`,
+    b.tastingsOffered && "Offers wedding tastings.",
+    `Hours: ${b.hours}.`,
+    b.targetCustomers.length && `Customers they want more of: ${b.targetCustomers.join(", ")}.`,
+    `Ad service radius: ${b.adRadiusMiles} miles around ${b.location}.`,
+    b.currentOffer && `Promotion to feature: ${b.currentOffer}`,
+    b.peakSeasons.length && `Their peak seasons: ${b.peakSeasons.join(", ")}.`,
+    b.tone && `Brand voice: ${b.tone}.`,
+    b.doNotPromise && `Must NOT be claimed in the ad: ${b.doNotPromise}`,
+  ];
+  return parts.filter(Boolean).join("\n");
+}
+
 /** Writes real ad copy for the bakery's lead campaign. */
 export async function generateCampaignCopy(
   bakery: Bakery
 ): Promise<CampaignCopy | null> {
   return gatewayJson<CampaignCopy>(
-    `You write high-converting Meta lead-ad copy for local businesses. Respond ONLY with strict JSON: {"headline": "...", "body": "...", "cta": "...", "audience": "..."}. headline: under 60 chars, may include one emoji. body: 2 sentences, mention concrete offerings and starting price, end with a reason to submit the lead form now. cta: 2-4 words. audience: one line of targeting (radius around the city, age range, 4-6 interests).`,
-    `Bakery: ${bakery.name} in ${bakery.location}. Cakes: ${bakery.cakeTypes.join(", ")}. Prices $${bakery.priceMin}–$${bakery.priceMax}. Fulfillment: ${bakery.fulfillment.join(", ")}. Hours: ${bakery.hours}.`
+    `You write high-converting Meta lead-ad copy for local businesses. Respond ONLY with strict JSON: {"headline": "...", "body": "...", "cta": "...", "audience": "..."}. headline: under 60 chars, may include one emoji. body: 2 sentences in the bakery's own brand voice, using specifics from the brief (a real flavor, a real capability, the starting price or price per serving, the lead time), ending with a reason to submit the lead form now. cta: 2-4 words. audience: one line of targeting — the stated ad radius around the city, an age range, and 4-6 interests drawn from the customers they want more of.`,
+    campaignBrief(bakery)
   );
 }
 

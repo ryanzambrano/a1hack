@@ -1,7 +1,9 @@
 import Link from "next/link";
 
+import { AdReel } from "@/components/ad-reel";
 import {
   IconArrowRight,
+  IconCheck,
   IconMark,
   IconMegaphone,
   IconPhone,
@@ -9,6 +11,48 @@ import {
   Wordmark,
 } from "@/components/icons";
 import { ButtonLink, Card, SectionLabel } from "@/components/ui";
+
+/**
+ * Headline variants. The promise is the order, not the machinery — Meta and
+ * the voice agent are how it happens, and they belong in the subhead.
+ * Swap which one ships by changing the index below.
+ */
+const HEADLINES = [
+  {
+    lead: "Get",
+    accent: "qualified cake orders.",
+    sub: "SweetLeads writes the ads, runs them on Meta and calls every lead that comes in — so what reaches you is a booked order, not a lead list.",
+  },
+  {
+    lead: "Get more",
+    accent: "cake orders.",
+    sub: "Ads built from your own cake photos, and a voice agent that qualifies every lead within a minute of it landing.",
+  },
+  {
+    lead: "More cake orders.",
+    accent: "No phone calls.",
+    sub: "SweetLeads runs the campaign, answers the leads and hands you a typed order — date, size, flavor, budget.",
+  },
+  {
+    lead: "Wake up to",
+    accent: "booked cake orders.",
+    sub: "It advertises your cakes overnight and qualifies every lead on the phone, so the order book fills while the oven is off.",
+  },
+  {
+    lead: "Bake the cakes.",
+    accent: "We'll get the orders.",
+    sub: "Ads from your own photos, a voice agent on every lead, and a structured order at the end of it.",
+  },
+] as const;
+
+const HEADLINE = HEADLINES[0];
+
+/** Under the buttons: the three things that have to be true for the promise. */
+const PROMISES = [
+  "Ads built from cake photos you already have",
+  "Every lead called back within a minute",
+  "Date, size, flavor and budget captured on the call",
+];
 
 const CAPABILITIES = [
   {
@@ -50,24 +94,44 @@ export default function Landing() {
           <div className="absolute left-[12%] top-[-20rem] size-[44rem] rounded-full bg-honey-glow/25 blur-[130px]" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-24 sm:px-6">
-          <SectionLabel>Bakery growth agent</SectionLabel>
-          <h1 className="font-display mt-4 max-w-3xl text-4xl font-semibold text-gray-1000 sm:text-5xl">
-            Turn Meta ads into{" "}
-            <span className="text-honey">qualified cake orders.</span>
-          </h1>
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-gray-900">
-            SweetLeads runs the campaign and calls every lead, so your bakery
-            books more orders without anyone touching the phone.
-          </p>
+        <div className="relative mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="grid items-center gap-16 lg:grid-cols-12 lg:gap-10">
+            <div className="lg:col-span-6">
+              <SectionLabel>Bakery growth agent</SectionLabel>
+              <h1 className="font-display mt-4 text-4xl font-semibold text-gray-1000 sm:text-5xl">
+                {HEADLINE.lead}{" "}
+                <span className="text-honey">{HEADLINE.accent}</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-lg leading-relaxed text-gray-900">
+                {HEADLINE.sub}
+              </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            <ButtonLink href="/login" variant="primary" size="lg" prefix={<IconArrowRight />}>
-              Get started
-            </ButtonLink>
-            <ButtonLink href="/login" size="lg">
-              Log in
-            </ButtonLink>
+              <div className="mt-8 flex flex-wrap items-center gap-2">
+                <ButtonLink href="/login" variant="primary" size="lg" prefix={<IconArrowRight />}>
+                  Get started
+                </ButtonLink>
+                <ButtonLink href="/login" size="lg">
+                  Log in
+                </ButtonLink>
+              </div>
+
+              <ul className="mt-8 space-y-2.5">
+                {PROMISES.map((promise) => (
+                  <li key={promise} className="flex items-start gap-2.5 text-sm text-gray-900">
+                    <IconCheck className="mt-0.5 size-3.5 shrink-0 text-honey" />
+                    {promise}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Held to a phone-ish width, and pushed right so the reel reads as
+                a device beside the copy rather than a second column of it. */}
+            <div className="lg:col-span-6 lg:pl-12">
+              <div className="mx-auto max-w-[360px]">
+                <AdReel />
+              </div>
+            </div>
           </div>
 
           <div className="mt-24 grid gap-3 sm:grid-cols-3">

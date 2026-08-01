@@ -1,6 +1,12 @@
 import { adminClient } from "@/lib/supabase/admin";
 import type { Json, Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { type CallState, hydrateState } from "@/lib/agent/ontology";
+import {
+  PROFILE_DEFAULTS,
+  PROFILE_KEYS,
+  describeHours,
+  type BakeryProfileDetail,
+} from "@/lib/bakery-profile";
 import type { Bakery, Campaign, Lead, TranscriptMessage } from "../types";
 
 export interface ChatMessage {
@@ -44,16 +50,55 @@ function toJson(order: CallState | null): Json {
 
 /* ------------------------------- mapping -------------------------------- */
 
-function toBakery(row: Tables<"bakeries">): Bakery {
+/**
+ * The questionnaire half of the profile, read back out of the jsonb column.
+ *
+ * Anything missing or of the wrong type falls back to its default, so a row
+ * written before a question existed still produces a complete profile and the
+ * form never has to render `undefined` into an input.
+ */
+function readProfile(value: Json): BakeryProfileDetail {
+  const src =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const out: Record<string, unknown> = { ...PROFILE_DEFAULTS };
+  for (const key of PROFILE_KEYS) {
+    const fallback = PROFILE_DEFAULTS[key];
+    const raw = src[key];
+    if (Array.isArray(fallback)) {
+      if (Array.isArray(raw)) out[key] = raw.filter((v) => typeof v === "string");
+    } else if (typeof raw === typeof fallback) {
+      out[key] = raw;
+    }
+  }
+  return out as BakeryProfileDetail;
+}
+
+function writeProfile(bakery: Bakery): Json {
+  return Object.fromEntries(PROFILE_KEYS.map((key) => [key, bakery[key]])) as Json;
+}
+
+/** Exported for loadShop(), which reads the same row to brief the agent. */
+export function bakeryFromRow(row: Tables<"bakeries">): Bakery {
   return {
+    ...readProfile(row.profile),
     name: row.name,
     location: row.location,
+    address: row.address,
+    phone: row.phone,
+    email: row.email,
+    description: row.description,
+    hours: row.hours,
+    openHour: row.open_hour,
+    closeHour: row.close_hour,
+    closedWeekdays: row.closed_weekdays,
+    orderCutoffHour: row.order_cutoff_hour,
     cakeTypes: row.cake_types,
     priceMin: row.price_min,
     priceMax: row.price_max,
     fulfillment: row.fulfillment,
-    phone: row.phone,
-    hours: row.hours,
     monthlyBudget: row.monthly_budget,
   };
 }
@@ -102,7 +147,7 @@ export async function getBakery(): Promise<Bakery | null> {
     .maybeSingle();
 
   if (error) fail("getBakery", error.message);
-  return data ? toBakery(data) : null;
+  return data ? bakeryFromRow(data) : null;
 }
 
 export async function saveBakery(bakery: Bakery): Promise<void> {
@@ -110,13 +155,23 @@ export async function saveBakery(bakery: Bakery): Promise<void> {
     id: BAKERY_ID,
     name: bakery.name,
     location: bakery.location,
+    address: bakery.address,
+    phone: bakery.phone,
+    email: bakery.email,
+    description: bakery.description,
+    // Derived rather than typed, so the sentence the agent reads out can never
+    // disagree with the days the order engine accepts pickups on.
+    hours: describeHours(bakery.openHour, bakery.closeHour, bakery.closedWeekdays),
+    open_hour: bakery.openHour,
+    close_hour: bakery.closeHour,
+    closed_weekdays: bakery.closedWeekdays,
+    order_cutoff_hour: bakery.orderCutoffHour,
     cake_types: bakery.cakeTypes,
     price_min: bakery.priceMin,
     price_max: bakery.priceMax,
     fulfillment: bakery.fulfillment,
-    phone: bakery.phone,
-    hours: bakery.hours,
     monthly_budget: bakery.monthlyBudget,
+    profile: writeProfile(bakery),
     updated_at: now(),
   });
 

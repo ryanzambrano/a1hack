@@ -7,6 +7,7 @@
  * tokens, needs something stronger than a suggestion.
  */
 
+import type { Bakery } from "@/lib/types";
 import type { CallState } from "./ontology";
 import { speakMoney } from "./speech";
 
@@ -54,6 +55,16 @@ const COMPLAINT_PATTERNS = [
 /** Weddings and big catering are quoted by a person, not on a first call. */
 const BIG_JOB_PATTERNS = [/\bwedding\b/i, /\bcater(ing)?\b/i, /\bcorporate event\b/i];
 
+/**
+ * A wedding CAKE is quoted by a person. A wedding anniversary, a wedding
+ * shower or a cake shaped like a wedding dress is an ordinary celebration
+ * cake — and matching those was ending perfectly bookable custom-cake calls on
+ * the word "wedding" alone. These phrases are struck out before the big-job
+ * test runs, so "it's for our wedding anniversary" stays on the call.
+ */
+const WEDDING_BUT_NOT_A_WEDDING_CAKE =
+  /\bwedding\s+(anniversar(y|ies)|shower|gift|present|invitation|dress|ring|band|guests?|photos?|planner)\b/gi;
+
 export interface MandatoryEscalation {
   reason: string;
   say: string;
@@ -85,7 +96,8 @@ export function mandatoryEscalation(utterance: string): MandatoryEscalation | nu
       say: "I'm sorry about that. That needs a person rather than me, so I'll get someone from the bakery to call you back right away.",
     };
   }
-  if (BIG_JOB_PATTERNS.some((p) => p.test(text))) {
+  const bigJobText = text.replace(WEDDING_BUT_NOT_A_WEDDING_CAKE, " ");
+  if (BIG_JOB_PATTERNS.some((p) => p.test(bigJobText))) {
     return {
       reason: "wedding or catering enquiry",
       say: "Lovely. That one is quoted by our head baker rather than over the phone with me, so I'll take your details and have them call you back.",
@@ -136,12 +148,69 @@ export function allowedPrices(state: CallState): string[] {
     allowed.push(speakMoney(state.chosenDesign.lowCents));
     allowed.push(speakMoney(state.chosenDesign.highCents));
   }
+  // A delivery fee is computed by quote_delivery from the bakery's own zone,
+  // so the fee itself is sayable — and so is the sum, because a caller always
+  // asks "so what's the total?" and doing that addition is the one piece of
+  // arithmetic the agent would otherwise have to invent.
+  if (state.delivery) {
+    allowed.push(speakMoney(state.delivery.feeCents));
+    if (state.quotedCents !== null) {
+      allowed.push(speakMoney(state.quotedCents + state.delivery.feeCents));
+    }
+    for (const cents of [
+      state.chosenDesign?.lowCents,
+      state.chosenDesign?.highCents,
+    ]) {
+      if (cents !== undefined) allowed.push(speakMoney(cents + state.delivery.feeCents));
+    }
+  }
+  // The amount actually charged, which for a deposit is neither the cake price
+  // nor the total.
+  if (state.payment) allowed.push(speakMoney(state.payment.amountCents));
   return allowed;
 }
 
-/** Every money figure in `say` that no tool produced. Empty means clean. */
-export function unbackedPrices(say: string, state: CallState): string[] {
-  const allowed = new Set(allowedPrices(state).map((p) => p.replace(/\s/g, "")));
+/**
+ * Figures the bakery published about itself in /setup — the rush fee, the
+ * delivery rate, the minimum order, the price band.
+ *
+ * These are answers the business gave, not numbers a model made up, and the
+ * agent is briefed with them precisely so it can answer "how much is
+ * delivery?" without a lookup. Leaving them out of the invariant meant the
+ * agent quoting the bakery's own published rate back at a caller got its reply
+ * swallowed as an invented price.
+ */
+export function publishedPrices(profile: Bakery): number[] {
+  return [
+    profile.rushFeeUsd,
+    profile.deliveryFeeUsd,
+    profile.deliveryPerMileUsd,
+    profile.deliveryBaseFeeUsd,
+    profile.deliveryMinimumUsd,
+    profile.customQuoteThresholdUsd,
+    profile.priceMin,
+    profile.priceMax,
+    profile.pricePerServing,
+  ]
+    .filter((usd) => Number.isFinite(usd) && usd > 0)
+    .map((usd) => Math.round(usd * 100));
+}
+
+/**
+ * Every money figure in `say` that neither a tool nor the bakery's own profile
+ * produced. Empty means clean.
+ */
+export function unbackedPrices(
+  say: string,
+  state: CallState,
+  profile?: Bakery
+): string[] {
+  const allowed = new Set(
+    [
+      ...allowedPrices(state),
+      ...(profile ? publishedPrices(profile).map(speakMoney) : []),
+    ].map((p) => p.replace(/\s/g, ""))
+  );
   return (say.match(MONEY) ?? [])
     .map((m) => m.replace(/\s/g, ""))
     .filter((m) => !allowed.has(m));

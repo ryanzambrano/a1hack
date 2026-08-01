@@ -125,6 +125,126 @@ function LearningCurve({ points }: { points: Array<{ n: number; mape: number }> 
   );
 }
 
+
+/* ------------------------------ network map -------------------------------- */
+
+/** Approximate country centroids — enough to place a dot, not a border. */
+const CENTROIDS: Record<string, [number, number]> = {
+  US: [39.8, -98.6], CA: [56.1, -106.3], GB: [55.4, -3.4], SE: [60.1, 18.6],
+  AU: [-25.3, 133.8], DK: [56.3, 9.5], FR: [46.2, 2.2], NL: [52.1, 5.3],
+  NO: [60.5, 8.5], NG: [9.1, 8.7], IE: [53.4, -8.2], DE: [51.2, 10.4],
+};
+
+/**
+ * Where the network bakes, by country.
+ *
+ * An equirectangular dot map rather than a choropleth: the document records a
+ * country per bakery and no coordinates, so a dot at a country centroid is
+ * exactly as precise as the data and no more. Drawing filled borders would
+ * imply per-region detail we do not have.
+ */
+function CoverageMap({ countries }: { countries: Array<{ code: string; bakeries: number; median8in: number | null }> }) {
+  const w = 620;
+  const h = 300;
+  const maxCount = Math.max(1, ...countries.map((c) => c.bakeries));
+  const project = (lat: number, lng: number): [number, number] => [
+    ((lng + 180) / 360) * w,
+    ((90 - lat) / 180) * h,
+  ];
+  const plotted = countries.filter((c) => CENTROIDS[c.code]);
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Bakery coverage by country">
+        {/* Graticule — enough to read the projection, recessive enough to ignore. */}
+        {[-60, -30, 0, 30, 60].map((lat) => (
+          <line key={lat} x1={0} x2={w} y1={project(lat, 0)[1]} y2={project(lat, 0)[1]}
+            stroke="var(--ds-gray-400)" strokeWidth="1" />
+        ))}
+        {[-120, -60, 0, 60, 120].map((lng) => (
+          <line key={lng} x1={project(0, lng)[0]} x2={project(0, lng)[0]} y1={0} y2={h}
+            stroke="var(--ds-gray-400)" strokeWidth="1" />
+        ))}
+
+        {/* Largest first, so a small dot is never hidden behind a big one. */}
+        {[...plotted]
+          .sort((a, b) => b.bakeries - a.bakeries)
+          .map((c) => {
+            const [lat, lng] = CENTROIDS[c.code];
+            const [x, y] = project(lat, lng);
+            const r = 5 + Math.sqrt(c.bakeries / maxCount) * 17;
+            return (
+              <g key={c.code}>
+                <circle cx={x} cy={y} r={r} fill="var(--viz-1)" fillOpacity="0.3"
+                  stroke="var(--viz-1)" strokeWidth="1.5" />
+                {/* Only the roomy dots get a number; the rest are named in the
+                    legend. Europe packs six countries into a thumbnail, and
+                    labelling them in place is illegible. */}
+                {r > 11 && (
+                  <text x={x} y={y + 4} textAnchor="middle" className="tnum" fontSize="11"
+                    fontWeight="600" fill="var(--ds-gray-1000)">
+                    {c.bakeries}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+      </svg>
+
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+        {countries.map((c) => (
+          <li key={c.code} className="flex items-center gap-1.5 text-xs text-gray-900">
+            <span className="h-2 w-2 rounded-full" style={{ background: "var(--viz-1)" }} />
+            <span className="text-gray-1000">{c.code}</span>
+            <span className="tnum">{c.bakeries}</span>
+            {c.median8in ? <span className="tnum text-gray-700">${c.median8in.toFixed(0)}</span> : null}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-gray-700">Bakeries per country, with the median 8-inch price.</p>
+    </div>
+  );
+}
+
+/**
+ * The delivery ladder, drawn the way the zones are drawn: concentric rings of
+ * equal width, each one step dearer than the last.
+ */
+function DeliveryRings({ ladder, ringKm }: { ladder: Array<{ km: number; feeUsd: number }>; ringKm: number }) {
+  const size = 300;
+  const c = size / 2;
+  const rings = ladder.slice(0, 5);
+  const maxKm = rings[rings.length - 1]?.km ?? 1;
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[300px]" role="img"
+      aria-label="Delivery fee by distance ring">
+      {[...rings].reverse().map((ring, i) => {
+        const r = (ring.km / maxKm) * (c - 16);
+        return (
+          <circle key={ring.km} cx={c} cy={c} r={r} fill="var(--viz-1)"
+            fillOpacity={0.05 + i * 0.03} stroke="var(--viz-1)" strokeOpacity="0.55" strokeWidth="1.5" />
+        );
+      })}
+      {rings.map((ring) => {
+        const r = (ring.km / maxKm) * (c - 16);
+        return (
+          <text key={ring.km} x={c + 4} y={c - r + 12} fontSize="10" fill="var(--ds-gray-900)" className="tnum">
+            {ring.km}km · ${ring.feeUsd.toFixed(0)}
+          </text>
+        );
+      })}
+      <circle cx={c} cy={c} r="4" fill="var(--viz-2)" />
+      <text x={c} y={c + 18} textAnchor="middle" fontSize="10" fill="var(--ds-gray-900)">
+        bakery
+      </text>
+      <text x={c} y={size - 2} textAnchor="middle" fontSize="10" fill="var(--ds-gray-700)">
+        {ringKm}km rings
+      </text>
+    </svg>
+  );
+}
+
 /* --------------------------------- types ---------------------------------- */
 
 interface Intelligence {
@@ -138,6 +258,14 @@ interface Intelligence {
   byYear: Array<{ label: string; count: number }>;
   privacy: { withCustomerName: number };
   pricing: { priced: number; total: number; quotingEnabled: boolean };
+}
+
+interface Benchmark {
+  snapshot: string | null;
+  totals: { bakeries: number; active: number; countries: number; zones: number; currencies: number };
+  bands: Array<{ size: string; label: string; feeds: string; n: number; min: number; p25: number; median: number; p75: number; max: number }>;
+  countries: Array<{ code: string; bakeries: number; median8in: number | null }>;
+  delivery: { perRingUsd: number; ringKm: number; maxKm: number; ladder: Array<{ km: number; feeUsd: number }> };
 }
 
 interface Option {
@@ -164,6 +292,7 @@ const BENCHMARK = [
 
 export default function ArchivePage() {
   const [data, setData] = useState<Intelligence | null>(null);
+  const [network, setNetwork] = useState<Benchmark | null>(null);
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<Option[] | null>(null);
   const [matched, setMatched] = useState<string[]>([]);
@@ -176,6 +305,10 @@ export default function ArchivePage() {
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null));
+    fetch("/api/pricing/benchmark")
+      .then((r) => r.json())
+      .then(setNetwork)
+      .catch(() => setNetwork(null));
   }, []);
 
   useEffect(() => {
@@ -344,6 +477,85 @@ export default function ArchivePage() {
           </Card>
         </div>
       </div>
+
+      {/* ------------------------------- network ------------------------------- */}
+      <Card>
+        <CardHeader
+          title="The Daymaker network"
+          description="What 86 bakeries in 9 countries actually charge — the market prior behind every cold-start quote."
+          actions={network?.snapshot ? <Badge tone="gray">snapshot {network.snapshot}</Badge> : undefined}
+        />
+        <div className="grid gap-6 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Bakeries" value={network?.totals.active ?? "—"} caption={network ? `${network.totals.bakeries} on file` : ""} />
+          <Metric label="Countries" value={network?.totals.countries ?? "—"} caption={network ? `${network.totals.currencies} currencies` : ""} />
+          <Metric label="Delivery zones" value={network?.totals.zones ?? "—"} caption="drawn as distance rings" />
+          <Metric
+            label="8-inch spread"
+            value={network ? `${(network.bands.find((b) => b.size === "8in")!.max / network.bands.find((b) => b.size === "8in")!.min).toFixed(1)}×` : "—"}
+            caption="same cake, cheapest to dearest"
+          />
+        </div>
+
+        <div className="grid gap-6 border-t border-gray-200 px-5 py-5 lg:grid-cols-[1.4fr_1fr]">
+          <div>
+            <SectionLabel>Where the network bakes</SectionLabel>
+            <div className="mt-3">{network ? <CoverageMap countries={network.countries} /> : null}</div>
+          </div>
+          <div>
+            <SectionLabel>Delivery, by distance ring</SectionLabel>
+            <div className="mt-3 flex justify-center">
+              {network ? (
+                <DeliveryRings ladder={network.delivery.ladder} ringKm={network.delivery.ringKm} />
+              ) : null}
+            </div>
+            {network && (
+              <p className="mt-2 text-xs text-gray-700">
+                Median {"$"}
+                {network.delivery.perRingUsd.toFixed(2)} per {network.delivery.ringKm}km ring, out to{" "}
+                {network.delivery.maxKm}km. Fees resolve by point-in-polygon in production, but the
+                polygons are drawn as equal-width rings — so distance predicts the fee.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-200 px-5 py-5">
+          <SectionLabel>What a cake costs across the network</SectionLabel>
+          <ul className="mt-3 flex flex-col gap-2.5">
+            {(network?.bands ?? []).map((b) => {
+              const scale = Math.max(...(network?.bands ?? []).map((x) => x.max)) || 1;
+              const pct = (v: number) => `${(v / scale) * 100}%`;
+              return (
+                <li key={b.size} className="grid grid-cols-[minmax(132px,150px)_1fr_auto] items-center gap-3">
+                  <span className="whitespace-nowrap text-sm text-gray-900">
+                    {b.label} <span className="text-gray-700">· {b.feeds}</span>
+                  </span>
+                  {/* p25-p75 box with the median marked — a level, not a total. */}
+                  <span className="relative h-3.5 w-full rounded-[4px] bg-gray-200/50">
+                    <span
+                      className="absolute top-0 h-full rounded-[4px]"
+                      style={{ left: pct(b.p25), width: pct(b.p75 - b.p25), background: "var(--viz-1)", opacity: 0.55 }}
+                    />
+                    <span
+                      className="absolute top-[-2px] h-[18px] w-[2px] rounded"
+                      style={{ left: pct(b.median), background: "var(--viz-1)" }}
+                    />
+                  </span>
+                  <span className="tnum w-40 whitespace-nowrap text-right text-sm text-gray-1000">
+                    ${b.p25.toFixed(0)}–${b.p75.toFixed(0)}{" "}
+                    <span className="text-gray-700">med ${b.median.toFixed(0)}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-xs text-gray-700">
+            Interquartile range, median marked. This is the market, not this bakery — the agent
+            never quotes a network median as though the baker had agreed to it. It seeds the
+            calibration sheet and flags an input that looks wrong.
+          </p>
+        </div>
+      </Card>
 
       {/* ------------------------------- pricing ------------------------------- */}
       <Card>
