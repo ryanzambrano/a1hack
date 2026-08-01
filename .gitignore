@@ -42,3 +42,11 @@ supabase/.temp
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Downscaled copies of the bakery photo archive — regenerate with
+# scripts/ingest-archive.mjs --thumbs-only. Too large for git.
+/public/archive/
+
+# Reference screenshots from scripts/scrape-vercel-design.mjs. 13 MB of PNGs;
+# regenerate with `npm run design:scrape`. The token/component JSON is kept.
+/docs/design/shots/

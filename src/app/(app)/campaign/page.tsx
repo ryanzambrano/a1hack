@@ -1,8 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+import { IconArrowRight, IconMark, IconRefresh } from "@/components/icons";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  DataRow,
+  EmptyState,
+  Metric,
+  SectionLabel,
+} from "@/components/ui";
 import { useApp } from "@/lib/store";
 
 export default function CampaignPage() {
@@ -15,19 +27,16 @@ export default function CampaignPage() {
 
   if (!bakery || !campaign) {
     return (
-      <div className="animate-fade-up flex flex-col items-start gap-3 py-12">
-        <h1 className="text-2xl font-semibold text-stone-800">Campaign</h1>
-        <p className="text-stone-500">
-          Set up your bakery first — we&apos;ll generate the ad campaign from
-          your profile.
-        </p>
-        <Link
-          href="/setup"
-          className="rounded-xl bg-rose-600 px-4 py-2.5 font-semibold text-white hover:bg-rose-700"
-        >
-          Go to Bakery Setup →
-        </Link>
-      </div>
+      <EmptyState
+        className="mx-auto mt-10 max-w-lg"
+        title="No campaign yet"
+        description="Configure the bakery profile first — the ad creative and audience are generated from it."
+        action={
+          <ButtonLink href="/setup" variant="primary" prefix={<IconArrowRight />}>
+            Configure bakery
+          </ButtonLink>
+        }
+      />
     );
   }
 
@@ -40,118 +49,118 @@ export default function CampaignPage() {
   };
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="animate-fade-up mx-auto w-full max-w-6xl">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-800">Campaign</h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Generated from your bakery profile. Launch it to start receiving
-            leads.
+          <h1 className="text-xl font-semibold text-gray-1000">Campaign</h1>
+          <p className="mt-1 text-sm text-gray-900">
+            Generated from the bakery profile. Launch to start acquiring leads.
           </p>
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-sm font-medium ${
-            live
-              ? "bg-green-100 text-green-700"
-              : "bg-stone-100 text-stone-600"
-          }`}
-        >
-          {live ? "● Active" : "Draft"}
-        </span>
+        <Badge tone={live ? "green" : "gray"} dot pulse={live}>
+          {live ? "Delivering" : "Draft"}
+        </Badge>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-        {/* Ad creative preview */}
-        <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-          <div className="flex items-center gap-2 border-b border-stone-100 px-4 py-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 text-lg">
-              🍰
+      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+        {/* ---------------------------------------------------------------- */}
+        {/* Creative preview — a real ad unit, rendered dark.                  */}
+        {/* ---------------------------------------------------------------- */}
+        <Card className="overflow-hidden self-start">
+          <div className="flex items-center gap-2.5 border-b border-gray-200 px-4 py-3">
+            <div className="flex size-8 items-center justify-center rounded-md bg-gray-100 text-gray-1000">
+              <IconMark className="size-3.5" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-stone-800">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-1000">
                 {bakery.name}
               </p>
-              <p className="text-xs text-stone-400">Sponsored · Meta</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.06em] text-gray-700">
+                Sponsored · Meta
+              </p>
             </div>
           </div>
-          <div className="flex h-44 items-center justify-center bg-gradient-to-br from-rose-100 via-amber-50 to-rose-200 text-6xl">
-            🎂
+
+          <div className="grid-bg flex h-40 items-center justify-center border-b border-gray-200 bg-background">
+            <span className="label-micro">Creative slot · 1200×628</span>
           </div>
+
           <div className="px-4 py-3">
-            <p className="font-semibold text-stone-800">{campaign.headline}</p>
-            <p className="mt-1 text-sm text-stone-600">{campaign.body}</p>
-            <button
-              type="button"
-              className="mt-3 w-full cursor-default rounded-lg bg-stone-800 py-2 text-sm font-semibold text-white"
-            >
+            <p className="text-sm font-medium text-gray-1000">
+              {campaign.headline}
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-gray-900">
+              {campaign.body}
+            </p>
+            <div className="mt-3 flex h-9 w-full cursor-default items-center justify-center rounded-md bg-solid text-sm font-medium text-on-solid">
               {campaign.cta}
-            </button>
+            </div>
           </div>
-        </div>
+        </Card>
 
-        {/* Campaign settings + launch */}
-        <div className="flex flex-col gap-4">
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
-              Target audience
-            </h2>
-            <p className="mt-2 text-sm text-stone-700">{campaign.audience}</p>
-          </div>
+        {/* ---------------------------------------------------------------- */}
+        {/* Delivery configuration                                            */}
+        {/* ---------------------------------------------------------------- */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <div className="grid gap-6 px-5 py-4 sm:grid-cols-2">
+              <Metric
+                label="Daily budget"
+                value={`$${campaign.dailyBudget}`}
+                unit="/ day"
+                caption={`$${bakery.monthlyBudget}/month across Facebook & Instagram lead forms`}
+              />
+              <div>
+                <SectionLabel>Target audience</SectionLabel>
+                <p className="mt-2 text-sm leading-relaxed text-gray-1000">
+                  {campaign.audience}
+                </p>
+              </div>
+            </div>
+          </Card>
 
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
-              Budget
-            </h2>
-            <p className="mt-2 text-2xl font-semibold text-stone-800">
-              ${campaign.dailyBudget}
-              <span className="text-sm font-normal text-stone-400"> / day</span>
-            </p>
-            <p className="text-xs text-stone-400">
-              ${bakery.monthlyBudget}/month across Facebook &amp; Instagram lead
-              forms
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
-              What happens after launch
-            </h2>
-            <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-stone-600">
-              <li>Customers submit their name &amp; phone via the ad</li>
-              <li>SweetLeads calls each lead within a minute</li>
-              <li>The AI collects full cake-order details</li>
-              <li>You get a qualified order card, ready to quote</li>
-            </ol>
-          </div>
+          <Card>
+            <CardHeader title="Post-launch flow" />
+            <div className="px-5 py-3">
+              <dl>
+                <DataRow label="01 · Ad form submitted" value="Name + phone captured" />
+                <DataRow label="02 · Auto-dial" value="Within 60s" mono />
+                <DataRow label="03 · AI intake" value="Full order qualified" />
+                <DataRow label="04 · Handoff" value="Order card, ready to quote" />
+              </dl>
+            </div>
+          </Card>
 
           {live ? (
-            <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 p-5">
-              <p className="text-sm font-medium text-green-800">
-                Campaign is live. Leads will appear in your pipeline.
-              </p>
-              <Link
-                href="/leads"
-                className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-              >
-                View leads →
-              </Link>
-            </div>
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                <p className="text-sm text-gray-900">
+                  Campaign is delivering. Leads route to the pipeline
+                  automatically.
+                </p>
+                <ButtonLink href="/leads" variant="primary" prefix={<IconArrowRight />}>
+                  View pipeline
+                </ButtonLink>
+              </div>
+            </Card>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <button
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="primary"
+                size="lg"
+                loading={launching}
                 onClick={handleLaunch}
-                disabled={launching}
-                className="animate-pulse-ring rounded-xl bg-rose-600 px-8 py-4 text-lg font-bold text-white shadow-md transition-colors hover:bg-rose-700 disabled:opacity-60"
               >
-                {launching ? "Launching…" : "🚀 Launch Campaign"}
-              </button>
-              <button
+                {launching ? "Launching…" : "Launch campaign"}
+              </Button>
+              <Button
+                size="lg"
+                loading={busy}
+                prefix={busy ? undefined : <IconRefresh />}
                 onClick={() => void generateCampaign()}
-                disabled={busy}
-                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50"
               >
-                {busy ? "Writing new creative…" : "↻ Regenerate creative"}
-              </button>
+                {busy ? "Writing creative…" : "Regenerate creative"}
+              </Button>
             </div>
           )}
         </div>

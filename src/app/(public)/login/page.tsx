@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { Wordmark } from "@/components/icons";
+import { Button, Card, Field, Input, Note } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "sign-in" | "sign-up";
@@ -52,79 +54,102 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-      <Link href="/" className="flex items-center gap-2 font-semibold">
-        <span className="text-3xl">🍰</span>
-        <span className="text-xl text-stone-800">
-          Sweet<span className="text-rose-600">Leads</span>
-        </span>
-      </Link>
-
-      <form
-        onSubmit={submit}
-        className="mt-8 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6"
+    <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-16">
+      {/* Warmth first: an oven-glow wash, with the instrument grid faint
+          underneath it rather than the other way round. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
       >
-        <h1 className="text-lg font-semibold text-stone-800">
-          {mode === "sign-in" ? "Welcome back" : "Create your account"}
-        </h1>
-        <p className="mt-1 text-sm text-stone-500">
-          {mode === "sign-in"
-            ? "Sign in to see your leads and campaigns."
-            : "Sign up to start booking cake orders."}
-        </p>
+        <div className="grid-bg absolute inset-0 opacity-40 [mask-image:radial-gradient(ellipse_at_50%_35%,black,transparent_65%)]" />
+        <div className="absolute left-1/2 top-[-18rem] size-[38rem] -translate-x-1/2 rounded-full bg-honey-glow/25 blur-[120px]" />
+      </div>
 
-        <label className="mt-5 block text-sm font-medium text-stone-700">
-          Email
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-800 outline-none focus:border-rose-500"
-          />
-        </label>
+      <Link
+        href="/"
+        className="relative rounded-md text-xl text-gray-1000 transition-opacity hover:opacity-80"
+      >
+        <Wordmark />
+      </Link>
+      <p className="relative mt-2 text-sm text-gray-900">
+        Ads in. Cake orders out.
+      </p>
 
-        <label className="mt-4 block text-sm font-medium text-stone-700">
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            autoComplete={
-              mode === "sign-in" ? "current-password" : "new-password"
-            }
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-800 outline-none focus:border-rose-500"
-          />
-        </label>
+      <Card className="relative mt-8 w-full max-w-sm">
+        <form onSubmit={submit} className="px-6 py-6">
+          <h1 className="font-display text-xl font-semibold text-gray-1000">
+            {mode === "sign-in" ? "Welcome back" : "Open your bakery"}
+          </h1>
+          <p className="mt-1 text-sm text-gray-900">
+            {mode === "sign-in"
+              ? "Pick up where your pipeline left off."
+              : "Set up a workspace and start taking orders."}
+          </p>
 
-        {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
-        {notice && <p className="mt-4 text-sm text-emerald-600">{notice}</p>}
+          <div className="mt-6 grid gap-4">
+            <Field label="Email">
+              <Input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@bakery.com"
+              />
+            </Field>
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-6 w-full rounded-full bg-rose-600 py-2.5 font-medium text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
-        >
-          {busy ? "Working…" : mode === "sign-in" ? "Sign in" : "Sign up"}
-        </button>
+            <Field label="Password">
+              <Input
+                type="password"
+                required
+                minLength={6}
+                autoComplete={
+                  mode === "sign-in" ? "current-password" : "new-password"
+                }
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Field>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "sign-in" ? "sign-up" : "sign-in");
-            setError(null);
-            setNotice(null);
-          }}
-          className="mt-4 w-full text-center text-sm text-stone-500 hover:text-stone-700"
-        >
-          {mode === "sign-in"
-            ? "New here? Create an account"
-            : "Already have an account? Sign in"}
-        </button>
-      </form>
+          {error && (
+            <Note tone="red" className="mt-4">
+              {error}
+            </Note>
+          )}
+          {notice && (
+            <Note tone="green" className="mt-4">
+              {notice}
+            </Note>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            loading={busy}
+            className="mt-6 w-full"
+          >
+            {busy ? "Working…" : mode === "sign-in" ? "Sign in" : "Sign up"}
+          </Button>
+        </form>
+
+        <div className="rounded-b-xl border-t border-gray-200 bg-background/60 px-6 py-3 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+              setError(null);
+              setNotice(null);
+            }}
+            className="rounded text-sm text-gray-900 transition-colors hover:text-gray-1000"
+          >
+            {mode === "sign-in"
+              ? "New here? Create an account"
+              : "Already have an account? Sign in"}
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

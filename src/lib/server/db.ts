@@ -1,12 +1,7 @@
 import { adminClient } from "@/lib/supabase/admin";
 import type { Json, Tables, TablesUpdate } from "@/lib/supabase/database.types";
-import type {
-  Bakery,
-  CakeOrder,
-  Campaign,
-  Lead,
-  TranscriptMessage,
-} from "../types";
+import { type CallState, hydrateState } from "@/lib/agent/ontology";
+import type { Bakery, Campaign, Lead, TranscriptMessage } from "../types";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -41,9 +36,9 @@ function now(): string {
   return new Date().toISOString();
 }
 
-// A CakeOrder is plain JSON, but TypeScript gives interfaces no implicit index
+// CallState is plain JSON, but TypeScript gives interfaces no implicit index
 // signature, so it needs a nudge to satisfy the jsonb column's type.
-function toJson(order: CakeOrder | null): Json {
+function toJson(order: CallState | null): Json {
   return order as unknown as Json;
 }
 
@@ -91,7 +86,8 @@ function toLead(row: LeadRow): Lead {
     status: row.status,
     transcript,
     callOutcome: row.call_outcome,
-    order: (row.cake_order as CakeOrder | null) ?? null,
+    // Tolerates blobs written by earlier versions of the agent.
+    order: row.cake_order ? hydrateState(row.cake_order, Date.parse(row.created_at)) : null,
     nextAction: row.next_action,
   };
 }

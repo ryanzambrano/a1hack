@@ -4,7 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./env";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+// `/p` is the design proposal a caller opens from an SMS mid-call. They are a
+// bakery customer, not a user of this app — they have no account and will
+// never make one, so sending them to /login would break the whole flow. The
+// link is unguessable and read-only.
+const PUBLIC_PATHS = ["/login", "/auth", "/p"];
 
 function isPublic(pathname: string) {
   return (

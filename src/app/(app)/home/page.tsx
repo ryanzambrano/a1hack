@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+
+import { IconMark } from "@/components/icons";
 import { useApp } from "@/lib/store";
 
 export default function Home() {
@@ -14,12 +16,9 @@ export default function Home() {
   }, [hydrated, bakery, router]);
 
   return (
-    <div className="flex flex-col items-center gap-3 py-24 text-center">
-      <span className="text-4xl">🍰</span>
-      <h1 className="text-2xl font-semibold text-stone-800">SweetLeads</h1>
-      <p className="text-stone-500">
-        Turning Meta ads into qualified cake orders…
-      </p>
+    <div className="flex flex-col items-center gap-3 py-32 text-center">
+      <IconMark className="size-6 animate-pulse text-gray-500" />
+      <p className="label-micro">Loading workspace</p>
     </div>
   );
 }

@@ -3,8 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { RetellWebClient } from "retell-client-js-sdk";
 
-const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200";
+import { IconMic, IconPhone } from "@/components/icons";
+import {
+  Button,
+  Card,
+  CardHeader,
+  Input,
+  Note,
+  StatusDot,
+} from "@/components/ui";
 
 export default function TestCallPage() {
   const [phone, setPhone] = useState("+1");
@@ -50,7 +57,7 @@ export default function TestCallPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setStatus(
-        `Calling ${phone} from ${data.from} — pick up your phone! (call ${data.callId})`
+        `Calling ${phone} from ${data.from} — pick up your phone! (call ${data.callId})`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -78,70 +85,82 @@ export default function TestCallPage() {
   };
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-semibold text-stone-800">
-        Test the intake agent
-      </h1>
-      <p className="mt-1 text-sm text-stone-500">
-        SweetLeads-Operator on Retell — try it in the browser or have it call a
-        real phone.
-      </p>
+    <div className="animate-fade-up mx-auto w-full max-w-2xl">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-1000">Agent console</h1>
+          <p className="mt-1 text-sm text-gray-900">
+            Exercise the intake agent directly, without going through a campaign.
+          </p>
+        </div>
+        <span className="rounded bg-alpha-100 px-2 py-1 font-mono text-[11px] text-gray-900">
+          SweetLeads-Operator · Retell
+        </span>
+      </div>
 
-      <section className="mt-8 rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="font-medium text-stone-800">📞 Outbound test call</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          The agent calls this number and runs cake intake.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <input
-            className={inputClass}
+      <Card className="mt-6">
+        <CardHeader
+          title="Outbound test call"
+          description="The agent dials this number and runs the full cake-intake script."
+        />
+        <div className="flex flex-wrap gap-2 px-5 py-4">
+          <Input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+15125550148"
             inputMode="tel"
+            className="min-w-48 flex-1 font-mono tnum"
           />
-          <button
+          <Button
+            variant="primary"
+            prefix={dialing ? undefined : <IconPhone />}
+            loading={dialing}
             onClick={placeCall}
-            disabled={dialing}
-            className="shrink-0 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
           >
             {dialing ? "Dialing…" : "Call me"}
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
-      <section className="mt-4 rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="font-medium text-stone-800">🎙️ Talk in the browser</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          No phone needed — uses your mic, instant.
-        </p>
-        <button
-          onClick={toggleWebCall}
-          disabled={webCallConnecting}
-          className={`mt-3 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-            webCallActive
-              ? "bg-stone-700 hover:bg-stone-800"
-              : "bg-rose-600 hover:bg-rose-700"
-          }`}
-        >
-          {webCallConnecting
-            ? "Connecting…"
-            : webCallActive
-              ? "End call"
-              : "Start talking"}
-        </button>
-      </section>
+      <Card className="mt-4">
+        <CardHeader
+          title="Browser session"
+          description="No phone required — routes your mic straight to the agent."
+          actions={
+            webCallActive ? (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-green-900">
+                <StatusDot tone="green" pulse />
+                Connected
+              </span>
+            ) : undefined
+          }
+        />
+        <div className="px-5 py-4">
+          <Button
+            variant={webCallActive ? "error" : "primary"}
+            prefix={webCallConnecting ? undefined : <IconMic />}
+            loading={webCallConnecting}
+            onClick={toggleWebCall}
+          >
+            {webCallConnecting
+              ? "Connecting…"
+              : webCallActive
+                ? "End call"
+                : "Start talking"}
+          </Button>
+        </div>
+      </Card>
 
       {status && (
-        <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <Note tone="green" className="mt-4">
           {status}
-        </p>
+        </Note>
       )}
       {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <Note tone="red" title="Call failed" className="mt-4">
           {error}
-        </p>
+        </Note>
       )}
-    </main>
+    </div>
   );
 }

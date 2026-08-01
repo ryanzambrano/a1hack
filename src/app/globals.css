@@ -1,27 +1,302 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Geist tokens — transcribed from vercel.com/geist via
+   scripts/scrape-vercel-design.mjs, then warmed.
+
+   Light-only. The 100→1000 ramp convention does the heavy lifting: 100 is
+   always the faintest tint and 1000 always the most readable text, so the
+   same class names mean the same thing whichever way the theme runs.
+   ========================================================================= */
+
 :root {
-  --background: #fdf9f4;
-  --foreground: #292524;
+  color-scheme: light;
+
+  /* Canvas -------------------------------------------------------------
+     Geist's neutrals are strictly achromatic (hsl 0 0% L). Ours carry a
+     ~30° hue at low saturation, so the app reads as warm paper rather than
+     a spreadsheet, while keeping Geist's spacing of lightness steps — which
+     is what actually makes the ramp legible.
+
+     Cards are pure white and the page behind them is a shade warmer, so
+     every surface lifts off the background without needing a heavy shadow. */
+  --ds-background-100: hsl(0, 0%, 100%); /* raised surfaces: cards, rails, menus */
+  --ds-background-200: hsl(38, 40%, 98%); /* the page itself */
+
+  --ds-gray-100: hsl(38, 30%, 96%);
+  --ds-gray-200: hsl(36, 22%, 91%); /* hairline borders */
+  --ds-gray-300: hsl(35, 18%, 88%);
+  --ds-gray-400: hsl(35, 18%, 84%); /* hover borders */
+  --ds-gray-500: hsl(33, 13%, 75%);
+  --ds-gray-600: hsl(32, 10%, 62%);
+  --ds-gray-700: hsl(30, 8%, 52%); /* secondary text */
+  --ds-gray-800: hsl(30, 9%, 44%);
+  --ds-gray-900: hsl(28, 13%, 32%); /* tertiary text */
+  --ds-gray-1000: hsl(26, 22%, 12%); /* primary text — warm, not black */
+
+  /* Alpha grays sit on top of anything without punching a hole in it.
+     Warm-dark rather than pure black, or hovers turn the page grey. */
+  --ds-gray-alpha-100: hsl(28 30% 10% / 0.05);
+  --ds-gray-alpha-200: hsl(28 30% 10% / 0.075);
+  --ds-gray-alpha-300: hsl(28 30% 10% / 0.11);
+  --ds-gray-alpha-400: hsl(28 30% 10% / 0.13);
+  --ds-gray-alpha-500: hsl(28 30% 10% / 0.22);
+  --ds-gray-alpha-600: hsl(28 30% 10% / 0.42);
+
+  /* Brand ---------------------------------------------------------------
+     `solid` is the high-contrast fill Geist spends plain black on, and
+     `on-solid` is what sits atop it. Honey is reserved for brand moments —
+     the mark, the glow behind the sign-in card, one accented word — never
+     for status, which keeps its own semantic ramps below. */
+  --ds-solid: hsl(26, 24%, 12%);
+  --ds-solid-hover: hsl(26, 26%, 20%);
+  --ds-on-solid: hsl(38, 50%, 97%);
+  --ds-honey: hsl(28, 88%, 42%); /* dark enough to read as text on paper */
+  --ds-honey-glow: hsl(32, 95%, 60%); /* only ever blurred behind content */
+  --ds-honey-dim: hsl(40, 90%, 90%); /* selection wash */
+
+  /* Product accents. 100–300 are tints and borders, 700–800 solid fills,
+     900 the readable-on-paper text shade, 1000 the darkest. */
+  --ds-blue-100: hsla(212, 100%, 97%, 1);
+  --ds-blue-300: hsla(210, 100%, 94%, 1);
+  --ds-blue-500: hsla(209, 100%, 80%, 1);
+  --ds-blue-700: hsla(212, 100%, 48%, 1);
+  --ds-blue-800: hsla(212, 100%, 41%, 1);
+  --ds-blue-900: hsla(211, 100%, 42%, 1);
+  --ds-blue-1000: hsla(211, 100%, 15%, 1);
+
+  --ds-red-100: hsla(0, 100%, 97%, 1);
+  --ds-red-300: hsla(0, 100%, 95%, 1);
+  --ds-red-500: hsla(0, 82%, 85%, 1);
+  --ds-red-700: hsla(358, 75%, 59%, 1);
+  --ds-red-800: hsla(358, 70%, 52%, 1);
+  --ds-red-900: hsla(358, 66%, 48%, 1);
+  --ds-red-1000: hsla(355, 49%, 15%, 1);
+
+  --ds-green-100: hsla(120, 60%, 96%, 1);
+  --ds-green-300: hsla(120, 60%, 91%, 1);
+  --ds-green-500: hsla(124, 60%, 75%, 1);
+  --ds-green-700: hsla(131, 41%, 46%, 1);
+  --ds-green-800: hsla(132, 43%, 39%, 1);
+  --ds-green-900: hsla(133, 50%, 32%, 1);
+  --ds-green-1000: hsla(128, 29%, 15%, 1);
+
+  --ds-amber-100: hsla(39, 100%, 95%, 1);
+  --ds-amber-300: hsla(43, 96%, 90%, 1);
+  --ds-amber-500: hsla(38, 100%, 71%, 1);
+  --ds-amber-700: hsla(39, 100%, 57%, 1);
+  --ds-amber-800: hsla(35, 100%, 52%, 1);
+  --ds-amber-900: hsla(30, 100%, 32%, 1);
+  --ds-amber-1000: hsla(20, 79%, 17%, 1);
+
+  --ds-purple-100: hsla(276, 100%, 97%, 1);
+  --ds-purple-300: hsla(274, 78%, 95%, 1);
+  --ds-purple-700: hsla(272, 51%, 54%, 1);
+  --ds-purple-900: hsla(274, 71%, 43%, 1);
+  --ds-purple-1000: hsla(276, 100%, 15%, 1);
+  --ds-teal-700: hsla(173, 80%, 36%, 1);
+  --ds-teal-900: hsla(174, 90%, 30%, 1);
+
+  /* Elevation. Geist draws "borders" as inset rings so they never take up
+     layout space and never double up against a real 1px border. */
+  --ds-shadow-border: inset 0 0 0 1px var(--ds-gray-alpha-400);
+  --ds-shadow-small: 0 1px 2px hsl(28 30% 10% / 0.05);
+  --ds-shadow-medium:
+    0 2px 4px hsl(28 30% 10% / 0.04), 0 8px 16px -8px hsl(28 30% 10% / 0.08);
+  --ds-shadow-menu:
+    0 0 0 1px var(--ds-gray-alpha-300), 0 8px 24px hsl(28 30% 10% / 0.1);
+
+  --ds-focus-color: var(--ds-honey);
+  --ds-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================================================
+   Tailwind theme — Geist's ramps replace Tailwind's defaults wholesale so
+   `bg-gray-200` means Geist gray-200 everywhere, with no stale 50/950 shades.
+   ========================================================================= */
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-*: initial;
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-background: var(--ds-background-200);
+  --color-surface: var(--ds-background-100);
+
+  --color-solid: var(--ds-solid);
+  --color-solid-hover: var(--ds-solid-hover);
+  --color-on-solid: var(--ds-on-solid);
+  --color-honey: var(--ds-honey);
+  --color-honey-glow: var(--ds-honey-glow);
+  --color-honey-dim: var(--ds-honey-dim);
+
+  --color-gray-100: var(--ds-gray-100);
+  --color-gray-200: var(--ds-gray-200);
+  --color-gray-300: var(--ds-gray-300);
+  --color-gray-400: var(--ds-gray-400);
+  --color-gray-500: var(--ds-gray-500);
+  --color-gray-600: var(--ds-gray-600);
+  --color-gray-700: var(--ds-gray-700);
+  --color-gray-800: var(--ds-gray-800);
+  --color-gray-900: var(--ds-gray-900);
+  --color-gray-1000: var(--ds-gray-1000);
+
+  --color-alpha-100: var(--ds-gray-alpha-100);
+  --color-alpha-200: var(--ds-gray-alpha-200);
+  --color-alpha-300: var(--ds-gray-alpha-300);
+  --color-alpha-400: var(--ds-gray-alpha-400);
+  --color-alpha-500: var(--ds-gray-alpha-500);
+
+  --color-blue-100: var(--ds-blue-100);
+  --color-blue-300: var(--ds-blue-300);
+  --color-blue-500: var(--ds-blue-500);
+  --color-blue-700: var(--ds-blue-700);
+  --color-blue-800: var(--ds-blue-800);
+  --color-blue-900: var(--ds-blue-900);
+  --color-blue-1000: var(--ds-blue-1000);
+
+  --color-red-100: var(--ds-red-100);
+  --color-red-300: var(--ds-red-300);
+  --color-red-700: var(--ds-red-700);
+  --color-red-800: var(--ds-red-800);
+  --color-red-900: var(--ds-red-900);
+  --color-red-1000: var(--ds-red-1000);
+
+  --color-green-100: var(--ds-green-100);
+  --color-green-300: var(--ds-green-300);
+  --color-green-700: var(--ds-green-700);
+  --color-green-800: var(--ds-green-800);
+  --color-green-900: var(--ds-green-900);
+  --color-green-1000: var(--ds-green-1000);
+
+  --color-amber-100: var(--ds-amber-100);
+  --color-amber-300: var(--ds-amber-300);
+  --color-amber-700: var(--ds-amber-700);
+  --color-amber-800: var(--ds-amber-800);
+  --color-amber-900: var(--ds-amber-900);
+  --color-amber-1000: var(--ds-amber-1000);
+
+  --color-purple-100: var(--ds-purple-100);
+  --color-purple-300: var(--ds-purple-300);
+  --color-purple-700: var(--ds-purple-700);
+  --color-purple-900: var(--ds-purple-900);
+  --color-purple-1000: var(--ds-purple-1000);
+  --color-teal-700: var(--ds-teal-700);
+  --color-teal-900: var(--ds-teal-900);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  /* Display serif, used only for the wordmark and marketing headlines —
+     the one place the product is allowed to sound like a bakery. */
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  /* Geist rounds tighter than Tailwind's defaults. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --shadow-border: var(--ds-shadow-border);
+  --shadow-small: var(--ds-shadow-small);
+  --shadow-medium: var(--ds-shadow-medium);
+  --shadow-menu: var(--ds-shadow-menu);
+}
+
+/* ========================================================================= */
+
+* {
+  border-color: var(--ds-gray-200);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--ds-background-200);
+  color: var(--ds-gray-1000);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Geist sets headings tight and never bolder than 600. */
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+::selection {
+  background: var(--ds-honey-dim);
+  color: var(--ds-gray-1000);
+}
+
+/* Wordmark and marketing headlines. Slightly tighter and optically larger
+   than the sans it sits next to. */
+@utility font-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+/* One focus treatment for everything: a ring that clears the element with a
+   background-colored spacer, exactly like Geist's interactive primitives. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--ds-background-200),
+    0 0 0 4px var(--ds-focus-color);
+}
+
+/* Console chrome: thin, unobtrusive scrollbars. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ds-gray-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-gray-500);
+}
+
+/* --- utilities ----------------------------------------------------------- */
+
+/* The uppercase mono micro-label used above every data group. */
+@utility label-micro {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-gray-900);
+}
+
+/* Numbers in tables and metrics must not jitter as they update. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Faint grid backdrop — reads as an instrument panel, not a marketing page. */
+@utility grid-bg {
+  background-image:
+    linear-gradient(to right, var(--ds-gray-alpha-100) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ds-gray-alpha-100) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* --- motion -------------------------------------------------------------- */
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -30,21 +305,69 @@ body {
 }
 
 .animate-fade-up {
-  animation: fade-up 0.35s ease-out both;
+  animation: fade-up 0.2s var(--ds-ease) both;
 }
 
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.35);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(225, 29, 72, 0);
-  }
+/* Geist's loading shimmer — a highlight sweeping across a placeholder. */
+@keyframes shimmer {
   100% {
-    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+    transform: translateX(100%);
   }
 }
 
-.animate-pulse-ring {
-  animation: pulse-ring 1.6s ease-out infinite;
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--ds-gray-100);
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  /* Highlight sweeps lighter than the placeholder, so on paper it is a
+     white pass rather than the dark one a dark theme would use. */
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(0 0% 100% / 0.85),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+/* Live status dot: a solid core with a halo pulsing outward.
+   The halo lives on a pseudo-element — animating the dot's own opacity
+   would fade the core away for most of the cycle. */
+@keyframes ping-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.75);
+    opacity: 0;
+  }
+}
+
+.animate-ping-ring {
+  position: relative;
+}
+
+.animate-ping-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: ping-ring 1.8s var(--ds-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-ping-ring::after,
+  .shimmer::after {
+    animation: none;
+  }
 }

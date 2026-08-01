@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Nav } from "@/components/nav";
+import { AppShell } from "@/components/nav";
 import { AppProvider } from "@/lib/store";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,10 +22,7 @@ export default async function AppLayout({
 
   return (
     <AppProvider>
-      <Nav userEmail={user.email ?? null} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
-        {children}
-      </main>
+      <AppShell userEmail={user.email ?? null}>{children}</AppShell>
     </AppProvider>
   );
 }

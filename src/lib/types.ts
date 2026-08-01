@@ -1,3 +1,5 @@
+import type { CallState } from "./agent/ontology";
+
 export type Fulfillment = "pickup" | "delivery";
 
 export interface Bakery {
@@ -35,19 +37,6 @@ export interface TranscriptMessage {
   text: string;
 }
 
-export interface CakeOrder {
-  eventType: string;
-  eventDate: string;
-  guests: number;
-  size: string;
-  flavor: string;
-  design: string;
-  dietary: string;
-  fulfillment: string;
-  budget: string;
-  callbackTime: string;
-}
-
 export interface Lead {
   id: string;
   name: string;
@@ -57,7 +46,12 @@ export interface Lead {
   status: LeadStatus;
   transcript: TranscriptMessage[];
   callOutcome: string | null;
-  order: CakeOrder | null;
+  /**
+   * Everything the agent gathered on the call: the draft order as it built
+   * up turn by turn, and the booked order once it exists. Written after every
+   * turn, so a call that drops halfway still leaves something usable.
+   */
+  order: CallState | null;
   nextAction: string | null;
 }
 

@@ -1,46 +1,48 @@
-import type { Bakery, CakeOrder } from "../types";
-import type { ChatMessage } from "./db";
+/**
+ * Transport to the A1 LLM gateway.
+ *
+ * Nothing about the bakery lives here. The phone agent's reasoning is in
+ * `src/lib/agent/brain.ts`; this file only knows how to turn messages into
+ * text, plus a few one-shot JSON helpers for work that happens off the call.
+ */
 
-export interface AgentTurn {
-  say: string;
-  done: boolean;
-  customerName?: string;
-  order?: CakeOrder;
+import type { Bakery } from "../types";
+
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
 }
 
-function systemPrompt(bakery: Bakery | null): string {
-  const name = bakery?.name ?? "the bakery";
-  const cakes = bakery?.cakeTypes.join(", ") ?? "custom cakes";
-  const price = bakery ? `$${bakery.priceMin}–$${bakery.priceMax}` : "varies";
-  const fulfillment = bakery?.fulfillment.join(" and ") ?? "pickup and delivery";
-  return `You are a warm, efficient AI phone agent for ${name}, answering their cake-request line. The caller responded to a Meta ad about custom cakes. You are on a live phone call — speech-to-text may garble words, so keep every reply SHORT (one or two sentences), conversational, and ask exactly ONE question at a time. Never use emojis, markdown, or lists: your words are spoken aloud.
+export interface CompleteOptions {
+  /**
+   * Kept deliberately small. This runs between a caller finishing a sentence
+   * and hearing a reply, and a long budget on a reasoning model is dead air.
+   */
+  maxTokens?: number;
+  signal?: AbortSignal;
+}
 
-Bakery facts you may share: cake types: ${cakes}. Typical price range: ${price}. Fulfillment options: ${fulfillment}.
+/** luna and sol went down on 31 July; terra is the one that stayed up. */
+const DEFAULT_MODEL = "openai.gpt-5.6-terra";
 
-Collect, in a natural order:
-1. Caller's first name
-2. Event type (birthday, wedding, etc.)
-3. Event date
-4. Number of guests
-5. Cake size (suggest one from the guest count if they are unsure)
-6. Flavor
-7. Design or theme
-8. Dietary requirements
-9. Pickup or delivery
-10. Budget range
-11. Preferred callback time for the bakery to follow up with a quote
+/**
+ * The gateway sometimes hangs indefinitely rather than erroring. A caller
+ * hearing twelve seconds of silence is bad; hearing sixty is a lost customer
+ * and a burnt function timeout.
+ */
+const LIVE_CALL_TIMEOUT_MS = 12_000;
+const BACKGROUND_TIMEOUT_MS = 20_000;
 
-When everything is collected, read back a one-sentence summary, ask if it is correct. Once the caller confirms, thank them, say ${name} will call back at the agreed time, and end.
-
-Respond ONLY with strict JSON, no code fences:
-{"say": "<what to speak next>", "done": false}
-When the caller has CONFIRMED the summary, respond with:
-{"say": "<closing words>", "done": true, "customerName": "<name>", "order": {"eventType": "...", "eventDate": "...", "guests": <number>, "size": "...", "flavor": "...", "design": "...", "dietary": "...", "fulfillment": "Pickup or Delivery", "budget": "...", "callbackTime": "..."}}
-Use "Not specified" for anything the caller declined to give.`;
+export function gatewayConfigured(): boolean {
+  return Boolean(process.env.A1_GATEWAY_BASE && process.env.A1_GATEWAY_KEY);
 }
 
 function extractText(data: unknown): string {
-  const output = (data as { output?: Array<{ type: string; content?: Array<{ type: string; text?: string }> }> }).output;
+  const output = (
+    data as {
+      output?: Array<{ type: string; content?: Array<{ type: string; text?: string }> }>;
+    }
+  ).output;
   if (!Array.isArray(output)) return "";
   return output
     .filter((item) => item.type === "message")
@@ -50,24 +52,41 @@ function extractText(data: unknown): string {
     .join("");
 }
 
-function parseTurn(raw: string): AgentTurn {
-  const cleaned = raw
-    .trim()
-    .replace(/^```(?:json)?/i, "")
-    .replace(/```$/, "")
-    .trim();
-  try {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    const parsed = JSON.parse(cleaned.slice(start, end + 1)) as AgentTurn;
-    if (typeof parsed.say === "string") {
-      return { ...parsed, done: Boolean(parsed.done) };
-    }
-  } catch {
-    /* fall through to speaking the raw text */
+/* ------------------------------ live calls -------------------------------- */
+
+export async function complete(
+  messages: ChatMessage[],
+  { maxTokens = 300, signal }: CompleteOptions = {}
+): Promise<string> {
+  const base = process.env.A1_GATEWAY_BASE;
+  const key = process.env.A1_GATEWAY_KEY;
+  // `||` not `??`: an unset key in .env.local arrives as "", not undefined,
+  // and "" would otherwise be joined into a URL that cannot be parsed.
+  if (!base || !key) {
+    throw new Error("A1_GATEWAY_BASE and A1_GATEWAY_KEY must be set in .env.local");
   }
-  return { say: cleaned || "Sorry, could you say that again?", done: false };
+
+  const res = await fetch(`${base.replace(/\/$/, "")}/responses`, {
+    method: "POST",
+    signal: signal ?? AbortSignal.timeout(LIVE_CALL_TIMEOUT_MS),
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.A1_MODEL || DEFAULT_MODEL,
+      input: messages,
+      max_output_tokens: maxTokens,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  }
+  return extractText(await res.json());
 }
+
+/* ---------------------------- off-call helpers ---------------------------- */
 
 /** One-shot JSON completion against the gateway. Returns null on any failure. */
 async function gatewayJson<T>(system: string, user: string): Promise<T | null> {
@@ -79,14 +98,14 @@ async function gatewayJson<T>(system: string, user: string): Promise<T | null> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.A1_MODEL || "openai.gpt-5.6-terra",
+        model: process.env.A1_MODEL || DEFAULT_MODEL,
         input: [
           { role: "system", content: system },
           { role: "user", content: user },
         ],
         max_output_tokens: 4000,
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(BACKGROUND_TIMEOUT_MS),
     });
     if (!res.ok) {
       console.error("gateway error", res.status, (await res.text()).slice(0, 300));
@@ -128,9 +147,30 @@ export async function generateLeadPersona(): Promise<{ name: string } | null> {
   );
 }
 
+/**
+ * The loose shape the extraction prompt returns.
+ *
+ * This is deliberately not the agent's own order model. A transcript from a
+ * call the agent did not run — a Retell call, say — has to be mapped into
+ * `CallState` before it is stored, so the dashboard shows one shape no matter
+ * which transport took the call. See `stateFromExtractedOrder`.
+ */
+export interface ExtractedCake {
+  eventType?: string;
+  eventDate?: string;
+  guests?: number;
+  size?: string;
+  flavor?: string;
+  design?: string;
+  dietary?: string;
+  fulfillment?: string;
+  budget?: string;
+  callbackTime?: string;
+}
+
 export interface ExtractedOrder {
   customerName: string | null;
-  order: CakeOrder | null;
+  order: ExtractedCake | null;
   outcome: string;
   nextAction: string | null;
   qualified: boolean;
@@ -145,48 +185,4 @@ export async function extractOrderFromTranscript(
     `You analyze finished phone-call transcripts for ${bakery?.name ?? "a bakery"}'s cake-order line. Respond ONLY with strict JSON: {"customerName": <string or null>, "qualified": <true if the caller gave enough detail to quote>, "order": <null, or {"eventType","eventDate","guests","size","flavor","design","dietary","fulfillment","budget","callbackTime"} — use "Not specified" for gaps, guests is a number>, "outcome": "<one sentence: what happened on the call>", "nextAction": <string or null: the single best follow-up for the bakery>}`,
     `Transcript:\n${transcript.slice(0, 12_000)}`
   );
-}
-
-export async function agentTurn(
-  bakery: Bakery | null,
-  messages: ChatMessage[]
-): Promise<AgentTurn> {
-  let res: Response;
-  try {
-    res = await fetch(`${process.env.A1_GATEWAY_BASE}/responses`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.A1_GATEWAY_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.A1_MODEL || "openai.gpt-5.6-terra",
-        input: [
-          { role: "system", content: systemPrompt(bakery) },
-          ...messages,
-        ],
-        max_output_tokens: 4000,
-      }),
-      // The gateway sometimes hangs indefinitely (luna/sol outage July 31) —
-      // a caller hearing 12s of silence is better than a 60s function timeout.
-      signal: AbortSignal.timeout(12_000),
-    });
-  } catch (err) {
-    console.error("gateway unreachable", err);
-    return {
-      say: "Sorry, I'm having trouble hearing you — could you say that once more?",
-      done: false,
-    };
-  }
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error("gateway error", res.status, body.slice(0, 500));
-    return {
-      say: "I'm having a little trouble on my end. Could you repeat that?",
-      done: false,
-    };
-  }
-
-  return parseTurn(extractText(await res.json()));
 }

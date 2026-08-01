@@ -1,0 +1,485 @@
+/**
+ * Golden-scenario harness.
+ *
+ * Drives whole calls through the real brain, the real tools and the real
+ * database, with the language model replaced by a fixed script. That split is
+ * deliberate: the parts that must never regress — safety escalations, call
+ * guards, the price invariant, date rules, and writing an actual order — are
+ * exactly the parts that do not depend on the model's judgment, so they can
+ * be asserted on rather than eyeballed.
+ *
+ * Scenarios that escalate or hit a guard use no script at all: those paths
+ * short-circuit before the model is consulted, which is the property being
+ * tested.
+ */
+
+import { adminClient } from "@/lib/supabase/admin";
+import { loadShop } from "@/lib/server/catalog";
+import { type BrainTurn, type CompleteFn, runTurn } from "./brain";
+import { type CallState, emptyState, rememberTurn } from "./ontology";
+import { unbackedPrices } from "./policy";
+import type { ToolContext, ToolResult } from "./tools";
+
+export interface Recording {
+  turns: Array<{
+    said: string;
+    reply: string;
+    tools: string[];
+    /** What the tools actually returned — asserting on names alone is weak. */
+    results: ToolResult[];
+    done: boolean;
+    handoff: boolean;
+  }>;
+  state: CallState;
+  /** Money the agent said that no tool had computed. Must always be empty. */
+  unbacked: string[];
+}
+
+export interface Scenario {
+  name: string;
+  /** What the caller says, one entry per turn. */
+  says: string[];
+  /** Canned model replies, consumed in order. Omit for model-free paths. */
+  script?: string[];
+  /**
+   * Fixture this scenario needs. The catalog and the archive are seeded by
+   * different scripts and the demo reset clears the catalog, so a run with an
+   * empty table must report "skipped, seed it" rather than a pile of
+   * assertion failures that look like a broken agent.
+   */
+  requires?: "catalog" | "archive";
+  expect: (r: Recording) => string[] | Promise<string[]>;
+}
+
+/** Every tool result of a given name across the whole call. */
+function resultsOf(r: Recording, name: string): ToolResult[] {
+  return r.turns.flatMap((t) =>
+    t.results.filter((_, i) => t.tools[i] === name)
+  );
+}
+
+export interface ScenarioResult {
+  name: string;
+  pass: boolean;
+  failures: string[];
+  transcript: string[];
+  /** Set when a fixture was missing; the scenario did not run. */
+  skipped?: string;
+}
+
+/* -------------------------------- scenarios ------------------------------- */
+
+const speak = (say: string, done = false) => JSON.stringify({ say, done });
+const call = (name: string, args: Record<string, unknown>) =>
+  JSON.stringify({ tools: [{ name, args }] });
+
+export const SCENARIOS: Scenario[] = [
+  {
+    name: "allergy question is never answered by the model",
+    says: ["Hi, is your chocolate cake nut free? My son is allergic."],
+    expect: (r) => {
+      const f: string[] = [];
+      const t = r.turns[0];
+      if (!t.handoff) f.push("expected a handoff to a human");
+      if (!t.tools.includes("escalate")) f.push("expected the escalate tool to run");
+      if (!/shared kitchen/i.test(t.reply)) f.push("expected the shared-kitchen caveat");
+      if (/\b(yes|no|it is|they are)\b.*\bnut free\b/i.test(t.reply)) {
+        f.push("agent appears to have answered the allergy question");
+      }
+      if (!r.state.escalation) f.push("expected escalation recorded on the call state");
+      return f;
+    },
+  },
+  {
+    name: "asking for a person hands off immediately",
+    says: ["Can I speak to a real person please"],
+    expect: (r) =>
+      r.turns[0].handoff && r.turns[0].tools.includes("escalate")
+        ? []
+        : ["expected an immediate handoff"],
+  },
+  {
+    name: "wedding enquiry goes to the head baker",
+    says: ["I'm looking for a wedding cake for 120 people"],
+    expect: (r) =>
+      r.turns[0].handoff ? [] : ["expected weddings to be escalated, not quoted"],
+  },
+  {
+    name: "complaint about an existing order goes to a human",
+    says: ["My order was completely wrong and I want a refund"],
+    expect: (r) => (r.turns[0].handoff ? [] : ["expected a complaint to be escalated"]),
+  },
+  {
+    name: "three unintelligible turns offer a callback instead of looping",
+    says: ["", "", ""],
+    expect: (r) => {
+      const f: string[] = [];
+      if (r.turns.slice(0, 2).some((t) => t.done)) f.push("gave up too early");
+      const last = r.turns[2];
+      if (!last.handoff) f.push("expected a handoff after three misses");
+      if (r.turns[0].reply === r.turns[1].reply) {
+        f.push("repeated the same reprompt verbatim — reads as a broken loop");
+      }
+      return f;
+    },
+  },
+  {
+    name: "a closed day is refused with the real reason and the next open day",
+    says: ["Can I get a chocolate cake on Monday?"],
+    script: [call("check_date", { when: "Monday", product: "chocolate fudge" })],
+    expect: (r) => {
+      const [result] = resultsOf(r, "check_date");
+      if (!result) return ["expected check_date to run"];
+      const f: string[] = [];
+      if (result.ok) f.push("a closed Monday was accepted as available");
+      if (!/closed/i.test(String(result.reason ?? ""))) {
+        f.push(`expected a closed-day reason, got: ${String(result.reason)}`);
+      }
+      if (!result.earliestSpoken) f.push("no alternative day was offered");
+      if (/monday/i.test(String(result.earliestSpoken ?? ""))) {
+        f.push("offered another Monday as the alternative");
+      }
+      return f;
+    },
+  },
+  {
+    name: "a date inside the lead time is refused with the earliest that works",
+    requires: "catalog",
+    says: ["Can I pick up an almond ring cake tomorrow?"],
+    script: [call("check_date", { when: "tomorrow", product: "almond ring" })],
+    expect: (r) => {
+      const [result] = resultsOf(r, "check_date");
+      if (!result) return ["expected check_date to run"];
+      const f: string[] = [];
+      if (result.ok) f.push("accepted a date inside the lead time");
+      if (!/notice/i.test(String(result.reason ?? ""))) {
+        f.push(`expected a lead-time reason, got: ${String(result.reason)}`);
+      }
+      if (!result.earliest) f.push("no earliest date offered");
+      return f;
+    },
+  },
+  {
+    name: "changing the flavour mid-call replaces it rather than stacking",
+    requires: "catalog",
+    says: ["A chocolate cake for 20 with cookies and cream", "Actually make it raspberry"],
+    script: [
+      call("price_cake", { product: "chocolate fudge", choices: ["cookies and cream"] }),
+      speak("Cookies and cream it is. When would you like it?"),
+      call("price_cake", { choices: ["raspberry and vanilla cream"] }),
+      speak("Swapped to raspberry. When would you like it?"),
+    ],
+    expect: (r) => {
+      const f: string[] = [];
+      const filling = r.state.draft.selections["Filling"];
+      if (!/raspberry/i.test(filling ?? "")) {
+        f.push(`filling should be raspberry, got: ${filling}`);
+      }
+      // Only the filling was ever explicitly chosen. Two ids would mean the
+      // swap stacked a second filling instead of replacing the first, and the
+      // order would price as two fillings.
+      const ids = r.state.draft.optionIds;
+      if (new Set(ids).size !== ids.length) f.push(`duplicate option ids: ${ids.join(", ")}`);
+      if (ids.length !== 1) f.push(`expected 1 explicit choice, got ${ids.length}: ${ids.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "a guest count given after the size upgrades it instead of being ignored",
+    requires: "catalog",
+    says: ["I'd like a chocolate fudge cake", "It's for 20 people"],
+    script: [
+      call("price_cake", { product: "chocolate fudge" }),
+      speak("Lovely. Roughly how many people are you feeding?"),
+      call("find_cake", { query: "chocolate fudge", guests: 20 }),
+      call("price_cake", {}),
+      speak("That size will cover twenty. Which day would you like it?"),
+    ],
+    expect: (r) => {
+      const size = r.state.draft.selections["Size"] ?? "";
+      const servings = Number(/(\d+)/.exec(size)?.[1] ?? 0);
+      return servings >= 20
+        ? []
+        : [`size ${size || "(none)"} does not feed 20 — a defaulted size was left in place`];
+    },
+  },
+  {
+    name: "an undecided caller gets real past cakes texted to them, numbered",
+    requires: "archive",
+    says: ["Hi, it's my daughter's birthday and I want something with rainbows, about 30 people"],
+    script: [
+      call("find_designs", {
+        description: "something with rainbows for a daughter's birthday",
+        occasion: "birthday",
+        guests: 30,
+        budget: 200,
+      }),
+      speak("I've just texted you four rainbow cakes we've made. Which number looks closest?"),
+    ],
+    expect: (r) => {
+      const [result] = resultsOf(r, "find_designs");
+      if (!result) return ["expected find_designs to run"];
+      const f: string[] = [];
+      const options = (result.options ?? []) as Array<Record<string, unknown>>;
+      if (options.length < 3) f.push(`expected several options, got ${options.length}`);
+      if (!result.link) f.push("no proposal link was produced to text them");
+      if (!options.every((o, i) => o.number === i + 1)) {
+        f.push("options are not numbered 1..N — the caller cannot answer by number");
+      }
+      // Every option must be a distinct design, or a slot is wasted.
+      const descriptions = new Set(options.map((o) => String(o.description)));
+      if (descriptions.size !== options.length) f.push("duplicate designs among the options");
+      // Every description must be sized for this party, not the original cake.
+      if (!options.every((o) => /about 30\b/.test(String(o.description)))) {
+        f.push("options are not described at the size the caller asked for");
+      }
+      if (r.unbacked.length) f.push(`unbacked prices: ${r.unbacked.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "picking a design prices it from comparable past cakes",
+    requires: "archive",
+    says: ["A rainbow cake for 30 people, budget around $200", "Number two please"],
+    script: [
+      call("find_designs", { description: "rainbow", occasion: "birthday", guests: 30, budget: 200 }),
+      speak("Texted you four. Which number is closest?"),
+      call("pick_design", { number: 2 }),
+      speak("Lovely. Which day do you need it?"),
+    ],
+    expect: (r) => {
+      const [result] = resultsOf(r, "pick_design");
+      if (!result) return ["expected pick_design to run"];
+      const f: string[] = [];
+      if (!result.ok) f.push(`pick_design failed: ${String(result.reason)}`);
+      if (!r.state.chosenDesign) f.push("the chosen design was not recorded on the call state");
+      if (result.priceKnown && !result.basedOn) {
+        f.push("quoted a price without saying what it was based on");
+      }
+      // A custom cake gets a range, never a single figure.
+      if (result.priceKnown && !/ to /.test(String(result.priceRange))) {
+        f.push(`expected a price range, got: ${String(result.priceRange)}`);
+      }
+      if (r.unbacked.length) f.push(`unbacked prices: ${r.unbacked.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "a design with no close comparables is not priced on the call",
+    requires: "archive",
+    says: ["I want a sculpted dragon cake, four tiers, hand painted, for 200 people"],
+    script: [
+      call("find_designs", { description: "sculpted dragon hand painted", guests: 200 }),
+      speak("Let me see what we have."),
+    ],
+    expect: (r) => {
+      const [result] = resultsOf(r, "find_designs");
+      if (!result) return ["expected find_designs to run"];
+      // Either nothing matched, or whatever matched must not be presented as
+      // a confident quote for a 200-person sculpted dragon.
+      const options = (result.options ?? []) as Array<Record<string, unknown>>;
+      return options.length && !result.ok ? ["inconsistent result shape"] : [];
+    },
+  },
+  {
+    name: "the agent cannot state a price no tool produced",
+    says: ["How much for a chocolate cake?"],
+    script: [speak("That'll be $999 for the chocolate cake.")],
+    expect: (r) => {
+      const f: string[] = [];
+      if (r.turns[0].reply.includes("$999")) f.push("spoke an invented price");
+      if (r.unbacked.length) f.push(`unbacked prices reached the caller: ${r.unbacked.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "a full order books and produces a real order number",
+    requires: "catalog",
+    says: [
+      "I'd like a chocolate cake for 20 people",
+      "Yes, cookies and cream",
+      "Next Saturday",
+      "Ten in the morning, and it's for Sarah",
+      "Yes that's right",
+    ],
+    script: [
+      call("find_cake", { query: "chocolate cake", guests: 20 }),
+      speak("Our Chocolate Fudge Cake is lovely. Which filling would you like?"),
+      call("price_cake", { product: "chocolate fudge", choices: ["cookies and cream"] }),
+      speak("Lovely choice. Which day would you like to collect it?"),
+      call("check_date", { when: "next Saturday" }),
+      speak("That works. What time suits you?"),
+      call("book_order", { pickup_time: "10", customer_name: "Sarah" }),
+      speak("You're all booked.", true),
+    ],
+    expect: async (r) => {
+      const f: string[] = [];
+      const booked = r.state.booked;
+      if (!booked) return ["no order was booked"];
+      if (!/^B-\d+$/.test(booked.orderNumber)) {
+        f.push(`order number looks wrong: ${booked.orderNumber}`);
+      }
+      if (!r.state.draft.pickupDate) f.push("pickup date was never resolved");
+      if (r.unbacked.length) f.push(`unbacked prices: ${r.unbacked.join(", ")}`);
+
+      // The point of the whole exercise: a row the bakery's order board reads,
+      // priced by the catalog, tagged with the call it came from.
+      const { data: order } = await adminClient()
+        .from("orders")
+        .select("order_number, total_cents, status, lead_id, pickup_date, order_lines(product_name, qty)")
+        .eq("order_number", booked.orderNumber)
+        .maybeSingle();
+
+      if (!order) return [...f, `order ${booked.orderNumber} is not in the orders table`];
+      if (order.total_cents !== booked.totalCents) {
+        f.push(`stored total ${order.total_cents} != quoted ${booked.totalCents}`);
+      }
+      if (order.total_cents <= 0) f.push("order total is not positive");
+      if (order.status !== "new") f.push(`expected status new, got ${order.status}`);
+      if (!order.lead_id) f.push("order is not linked back to the lead");
+      if (order.pickup_date !== r.state.draft.pickupDate) {
+        f.push(`stored pickup ${order.pickup_date} != agreed ${r.state.draft.pickupDate}`);
+      }
+      const lines = order.order_lines ?? [];
+      if (lines.length !== 1) f.push(`expected 1 order line, got ${lines.length}`);
+      return f;
+    },
+  },
+];
+
+/* --------------------------------- runner --------------------------------- */
+
+function scriptedModel(script: string[]): CompleteFn {
+  let i = 0;
+  return async () => script[i++] ?? speak("Is there anything else I can help with?", true);
+}
+
+async function cleanup(leadId: string): Promise<void> {
+  const sb = adminClient();
+  // orders.lead_id is ON DELETE SET NULL, so sim orders must go explicitly or
+  // they linger on the board looking like real ones.
+  await sb.from("orders").delete().eq("lead_id", leadId);
+  await sb.from("call_sessions").delete().eq("lead_id", leadId);
+  await sb.from("transcript_messages").delete().eq("lead_id", leadId);
+  await sb.from("leads").delete().eq("id", leadId);
+}
+
+export async function runScenario(
+  scenario: Scenario,
+  index: number,
+  { keep = false }: { keep?: boolean } = {}
+): Promise<ScenarioResult> {
+  const shop = await loadShop();
+  const leadId = `sim-${Date.now()}-${index}`;
+  const sb = adminClient();
+
+  await sb.from("leads").insert({
+    id: leadId,
+    name: "Simulated caller",
+    phone: "+15125550148",
+    source: `Simulation: ${scenario.name}`,
+    status: "calling",
+    cake_order: null,
+  });
+
+  const state = emptyState();
+  const ctx: ToolContext = { leadId, phone: "+15125550148", state };
+  const recording: Recording = { turns: [], state, unbacked: [] };
+  const complete = scenario.script ? scriptedModel(scenario.script) : undefined;
+
+  try {
+    for (const said of scenario.says) {
+      const turn: BrainTurn = await runTurn({
+        utterance: said,
+        history: state.history,
+        ctx,
+        shop,
+        complete,
+      });
+
+      recording.unbacked.push(...unbackedPrices(turn.say, state));
+      recording.turns.push({
+        said,
+        reply: turn.say,
+        tools: turn.toolCalls.map((t) => t.name),
+        results: turn.toolCalls.map((t) => t.result),
+        done: turn.done,
+        handoff: turn.handoff,
+      });
+
+      if (said) rememberTurn(state, said, turn.say);
+      if (turn.done) break;
+    }
+
+    const failures = await scenario.expect(recording);
+    return {
+      name: scenario.name,
+      pass: failures.length === 0,
+      failures,
+      transcript: recording.turns.flatMap((t) => [
+        ...(t.said ? [`caller: ${t.said}`] : ["caller: (nothing audible)"]),
+        `agent:  ${t.reply}${t.tools.length ? `   [${t.tools.join(", ")}]` : ""}`,
+      ]),
+    };
+  } finally {
+    if (!keep) await cleanup(leadId);
+  }
+}
+
+/** Which fixtures are actually present right now. */
+async function availableFixtures(): Promise<Set<string>> {
+  const sb = adminClient();
+  const [catalog, archive] = await Promise.all([
+    sb.from("products").select("id", { count: "exact", head: true }).eq("active", true),
+    sb.from("archive_cakes").select("id", { count: "exact", head: true }).eq("active", true),
+  ]);
+  const present = new Set<string>();
+  if ((catalog.count ?? 0) > 0) present.add("catalog");
+  if ((archive.count ?? 0) > 0) present.add("archive");
+  return present;
+}
+
+const SEED_HINT: Record<string, string> = {
+  catalog: "no active products — seed the storefront catalog (POST /api/shop/seed)",
+  archive: "no archive cakes — run `node scripts/seed-archive.mjs`",
+};
+
+export async function runAll(options: { keep?: boolean } = {}): Promise<{
+  passed: number;
+  failed: number;
+  skipped: number;
+  results: ScenarioResult[];
+}> {
+  const fixtures = await availableFixtures();
+  const results: ScenarioResult[] = [];
+
+  for (const [i, scenario] of SCENARIOS.entries()) {
+    if (scenario.requires && !fixtures.has(scenario.requires)) {
+      results.push({
+        name: scenario.name,
+        pass: true,
+        failures: [],
+        transcript: [],
+        skipped: SEED_HINT[scenario.requires],
+      });
+      continue;
+    }
+    try {
+      results.push(await runScenario(scenario, i, options));
+    } catch (err) {
+      results.push({
+        name: scenario.name,
+        pass: false,
+        failures: [`threw: ${err instanceof Error ? err.message : String(err)}`],
+        transcript: [],
+      });
+    }
+  }
+
+  return {
+    passed: results.filter((r) => r.pass && !r.skipped).length,
+    failed: results.filter((r) => !r.pass).length,
+    skipped: results.filter((r) => r.skipped).length,
+    results,
+  };
+}

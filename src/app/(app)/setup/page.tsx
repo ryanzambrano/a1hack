@@ -2,6 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+import { IconArrowRight, IconCheck } from "@/components/icons";
+import {
+  Button,
+  Card,
+  CardFooter,
+  CardHeader,
+  Chip,
+  Field,
+  Input,
+  SectionLabel,
+} from "@/components/ui";
 import { useApp } from "@/lib/store";
 import type { Fulfillment } from "@/lib/types";
 
@@ -13,9 +25,6 @@ const CAKE_TYPE_OPTIONS = [
   "Cheesecake",
   "Vegan & gluten-free",
 ];
-
-const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200";
 
 export default function SetupPage() {
   const { bakery, saveBakery, hydrated, busy } = useApp();
@@ -86,153 +95,159 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="animate-fade-up">
-      <h1 className="text-2xl font-semibold text-stone-800">Bakery Setup</h1>
-      <p className="mt-1 text-sm text-stone-500">
-        Tell us about your bakery. We&apos;ll use this to generate your ad
-        campaign and brief your AI calling agent.
+    <div className="animate-fade-up mx-auto w-full max-w-3xl">
+      <h1 className="text-xl font-semibold text-gray-1000">Bakery profile</h1>
+      <p className="mt-1 text-sm text-gray-900">
+        This record is the source of truth for both the ad campaign and the
+        calling agent&apos;s brief.
       </p>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mt-6 grid gap-5 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:grid-cols-2"
-      >
-        <label className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Bakery name
-          <input
-            className={inputClass}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Sweet Street Bakery"
+      <form onSubmit={handleSubmit} className="mt-6">
+        <Card>
+          <CardHeader
+            title="Identity"
+            description="Shown in the ad unit and spoken by the agent on every call."
           />
-        </label>
+          <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
+            <Field label="Bakery name">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Sweet Street Bakery"
+              />
+            </Field>
+            <Field label="Location">
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Austin, TX"
+              />
+            </Field>
+            <Field label="Phone number">
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(512) 555-0148"
+                inputMode="tel"
+                className="font-mono tnum"
+              />
+            </Field>
+            <Field label="Hours" hint="Optional — quoted when a caller asks.">
+              <Input
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                placeholder="Tue–Sun, 8 AM – 6 PM"
+              />
+            </Field>
+          </div>
+        </Card>
 
-        <label className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Location
-          <input
-            className={inputClass}
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Austin, TX"
+        <Card className="mt-4">
+          <CardHeader
+            title="Catalog"
+            description="Constrains what the agent will quote and take orders for."
           />
-        </label>
+          <div className="grid gap-5 px-5 py-4">
+            <div className="grid gap-2">
+              <SectionLabel>Cake types offered</SectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {CAKE_TYPE_OPTIONS.map((type) => {
+                  const on = cakeTypes.includes(type);
+                  return (
+                    <Chip
+                      key={type}
+                      selected={on}
+                      onClick={() => setCakeTypes((c) => toggle(c, type))}
+                    >
+                      {on && <IconCheck className="size-3" />}
+                      {type}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div className="grid gap-1.5 text-sm font-medium text-stone-700 sm:col-span-2">
-          Cake types offered
-          <div className="flex flex-wrap gap-2">
-            {CAKE_TYPE_OPTIONS.map((type) => {
-              const on = cakeTypes.includes(type);
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setCakeTypes((c) => toggle(c, type))}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                    on
-                      ? "border-rose-600 bg-rose-50 text-rose-700"
-                      : "border-stone-300 text-stone-600 hover:bg-stone-50"
-                  }`}
-                >
-                  {on ? "✓ " : ""}
-                  {type}
-                </button>
-              );
-            })}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <SectionLabel>Price range</SectionLabel>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">$</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(Number(e.target.value))}
+                    className="tnum"
+                  />
+                  <span className="shrink-0 text-sm text-gray-700">to $</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(Number(e.target.value))}
+                    className="tnum"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <SectionLabel>Fulfillment</SectionLabel>
+                <div className="flex gap-1.5">
+                  {(["pickup", "delivery"] as Fulfillment[]).map((f) => {
+                    const on = fulfillment.includes(f);
+                    return (
+                      <Chip
+                        key={f}
+                        selected={on}
+                        onClick={() => setFulfillment((c) => toggle(c, f))}
+                        className="capitalize"
+                      >
+                        {on && <IconCheck className="size-3" />}
+                        {f}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Price range
-          <div className="flex items-center gap-2">
-            <span className="text-stone-400">$</span>
-            <input
-              type="number"
-              min={1}
-              className={inputClass}
-              value={priceMin}
-              onChange={(e) => setPriceMin(Number(e.target.value))}
-            />
-            <span className="text-stone-400">to $</span>
-            <input
-              type="number"
-              min={1}
-              className={inputClass}
-              value={priceMax}
-              onChange={(e) => setPriceMax(Number(e.target.value))}
-            />
+        <Card className="mt-4">
+          <CardHeader title="Spend" />
+          <div className="px-5 py-4">
+            <Field
+              label="Monthly ad budget"
+              hint={`≈ $${Math.max(5, Math.round(monthlyBudget / 30))}/day across Facebook & Instagram`}
+              className="max-w-xs"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700">$</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={monthlyBudget}
+                  onChange={(e) => setMonthlyBudget(Number(e.target.value))}
+                  className="tnum"
+                />
+              </div>
+            </Field>
           </div>
-        </div>
-
-        <div className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Delivery / pickup
-          <div className="flex gap-2">
-            {(["pickup", "delivery"] as Fulfillment[]).map((f) => {
-              const on = fulfillment.includes(f);
-              return (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setFulfillment((c) => toggle(c, f))}
-                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors ${
-                    on
-                      ? "border-rose-600 bg-rose-50 text-rose-700"
-                      : "border-stone-300 text-stone-600 hover:bg-stone-50"
-                  }`}
-                >
-                  {on ? "✓ " : ""}
-                  {f}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <label className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Phone number
-          <input
-            className={inputClass}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="(512) 555-0148"
-          />
-        </label>
-
-        <label className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Hours
-          <input
-            className={inputClass}
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
-            placeholder="Tue–Sun, 8 AM – 6 PM"
-          />
-        </label>
-
-        <label className="grid gap-1.5 text-sm font-medium text-stone-700">
-          Monthly ad budget
-          <div className="flex items-center gap-2">
-            <span className="text-stone-400">$</span>
-            <input
-              type="number"
-              min={1}
-              className={inputClass}
-              value={monthlyBudget}
-              onChange={(e) => setMonthlyBudget(Number(e.target.value))}
-            />
-            <span className="whitespace-nowrap text-xs text-stone-400">
-              ≈ ${Math.max(5, Math.round(monthlyBudget / 30))}/day
-            </span>
-          </div>
-        </label>
-
-        <div className="flex items-end sm:col-span-2">
-          <button
-            type="submit"
-            disabled={!valid || busy}
-            className="w-full rounded-xl bg-rose-600 px-4 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-          >
-            {busy ? "Generating your campaign…" : "Save & generate campaign →"}
-          </button>
-        </div>
+          <CardFooter>
+            <p className="text-xs text-gray-700">
+              Saving regenerates the ad creative from this profile.
+            </p>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!valid}
+              loading={busy}
+              prefix={busy ? undefined : <IconArrowRight />}
+            >
+              {busy ? "Generating campaign…" : "Save & generate campaign"}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
     </div>
   );
