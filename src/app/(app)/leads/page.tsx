@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { IconPhone, IconPlus } from "@/components/icons";
 import {
@@ -86,6 +87,16 @@ function LeadCard({ lead }: { lead: Lead }) {
 
 export default function LeadsPage() {
   const { leads, campaign, hydrated, simulateIncomingLead } = useApp();
+  const [demoMode, setDemoMode] = useState(false);
+
+  // Demo mode: one clearly-labeled simulated lead per minute. The leads it
+  // creates carry the "(simulated)" source like the manual button's do.
+  useEffect(() => {
+    if (!demoMode) return;
+    void simulateIncomingLead();
+    const id = setInterval(() => void simulateIncomingLead(), 60_000);
+    return () => clearInterval(id);
+  }, [demoMode, simulateIncomingLead]);
 
   if (!hydrated) return null;
 
@@ -102,9 +113,17 @@ export default function LeadsPage() {
               : "Launch the campaign to start receiving leads."}
           </p>
         </div>
-        <Button prefix={<IconPlus />} onClick={simulateIncomingLead}>
-          Simulate lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setDemoMode((d) => !d)}
+            className={demoMode ? "ring-2 ring-amber-400" : undefined}
+          >
+            {demoMode ? "⏸ Stop demo feed (simulated)" : "▶ Demo feed (simulated, 1/min)"}
+          </Button>
+          <Button prefix={<IconPlus />} onClick={simulateIncomingLead}>
+            Simulate lead
+          </Button>
+        </div>
       </div>
 
       {agentNumber && (
