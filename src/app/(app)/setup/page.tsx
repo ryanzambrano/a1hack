@@ -29,11 +29,13 @@ import {
   Textarea,
   cx,
 } from "@/components/ui";
+import { quoteDelivery, zoneFromProfile } from "@/lib/delivery";
 import {
   ALLERGEN_OPTIONS,
   CAKE_TYPE_OPTIONS,
   DECORATION_OPTIONS,
   DEFAULT_BAKERY,
+  DELIVERY_PRICING_OPTIONS,
   DIETARY_OPTIONS,
   FILLING_OPTIONS,
   FLAVOR_OPTIONS,
@@ -119,13 +121,8 @@ const SECTIONS = [
   {
     id: "fulfillment",
     title: "Pickup & delivery",
-    description: "Where a cake can end up, and what that costs.",
-    answers: (b: Bakery) => [
-      b.fulfillment,
-      b.deliveryRadiusMiles,
-      b.deliveryFeeUsd,
-      b.deliveryMinimumUsd,
-    ],
+    description: "How far you'll drive, and what you charge to do it.",
+    answers: (b: Bakery) => [b.fulfillment, b.deliveryRadiusMiles, b.deliveryPricing],
   },
   {
     id: "pricing",
@@ -629,30 +626,108 @@ export default function SetupPage() {
               </div>
 
               {form.fulfillment.includes("delivery") && (
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Delivery radius" hint="Miles from the shop.">
-                    <NumberInput
-                      value={form.deliveryRadiusMiles}
-                      onChange={(v) => set("deliveryRadiusMiles", v)}
-                      min={1}
-                    />
-                  </Field>
-                  <Field label="Delivery fee">
-                    <NumberInput
-                      value={form.deliveryFeeUsd}
-                      onChange={(v) => set("deliveryFeeUsd", v)}
-                      min={0}
-                      prefix="$"
-                    />
-                  </Field>
-                  <Field label="Minimum order to deliver">
-                    <NumberInput
-                      value={form.deliveryMinimumUsd}
-                      onChange={(v) => set("deliveryMinimumUsd", v)}
-                      min={0}
-                      prefix="$"
-                    />
-                  </Field>
+                <div className="grid gap-4 rounded-lg border border-gray-400 p-4">
+                  <div>
+                    <SectionLabel>Your delivery zone</SectionLabel>
+                    <p className="mt-1 text-xs text-gray-900">
+                      How far you&apos;ll drive, and what that costs. The agent
+                      measures the caller&apos;s address against this on the
+                      call — it never guesses a fee or whether someone is in
+                      range.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="How far you'll deliver"
+                      hint="Straight-line miles from your door."
+                    >
+                      <NumberInput
+                        value={form.deliveryRadiusMiles}
+                        onChange={(v) => set("deliveryRadiusMiles", v)}
+                        min={1}
+                        suffix="miles"
+                      />
+                    </Field>
+                    <Field
+                      label="Minimum order to deliver"
+                      hint="0 if you'll drive out for anything."
+                    >
+                      <NumberInput
+                        value={form.deliveryMinimumUsd}
+                        onChange={(v) => set("deliveryMinimumUsd", v)}
+                        min={0}
+                        prefix="$"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <SectionLabel>What you charge for it</SectionLabel>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DELIVERY_PRICING_OPTIONS.map((option) => {
+                        const on = form.deliveryPricing === option.value;
+                        return (
+                          <Chip
+                            key={option.value}
+                            selected={on}
+                            onClick={() => set("deliveryPricing", option.value)}
+                          >
+                            {on && <IconCheck className="size-3" />}
+                            {option.label}
+                          </Chip>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-900">
+                      {
+                        DELIVERY_PRICING_OPTIONS.find(
+                          (o) => o.value === form.deliveryPricing,
+                        )?.hint
+                      }
+                    </p>
+                  </div>
+
+                  {form.deliveryPricing === "per_mile" && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Price per mile">
+                        <NumberInput
+                          value={form.deliveryPerMileUsd}
+                          onChange={(v) => set("deliveryPerMileUsd", v)}
+                          min={0}
+                          prefix="$"
+                          suffix="/ mile"
+                        />
+                      </Field>
+                      <Field
+                        label="Call-out fee"
+                        hint="Charged on top, before the miles. 0 if none."
+                      >
+                        <NumberInput
+                          value={form.deliveryBaseFeeUsd}
+                          onChange={(v) => set("deliveryBaseFeeUsd", v)}
+                          min={0}
+                          prefix="$"
+                        />
+                      </Field>
+                    </div>
+                  )}
+
+                  {form.deliveryPricing === "flat" && (
+                    <Field
+                      label="Delivery fee"
+                      hint="The same anywhere inside the zone."
+                    >
+                      <NumberInput
+                        value={form.deliveryFeeUsd}
+                        onChange={(v) => set("deliveryFeeUsd", v)}
+                        min={0}
+                        prefix="$"
+                      />
+                    </Field>
+                  )}
+
+                  <DeliveryPreview bakery={form} />
                 </div>
               )}
 
@@ -913,6 +988,44 @@ function Progress({ done, total }: { done: number; total: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The zone, priced at three distances.
+ *
+ * A rate per mile is hard to feel — "$2 a mile" sounds like nothing until it
+ * is a $29 delivery. These are the same numbers the agent will quote on a
+ * call, computed by the same function, so what the baker sees here is exactly
+ * what a caller will hear.
+ */
+function DeliveryPreview({ bakery }: { bakery: Bakery }) {
+  const zone = zoneFromProfile(bakery);
+  const radius = Math.max(1, Math.round(zone.radiusMiles));
+  const samples = [...new Set([1, Math.round(radius / 2), radius])].filter(
+    (m) => m >= 1 && m <= radius,
+  );
+  const placed = bakery.latitude !== 0 || bakery.longitude !== 0;
+
+  return (
+    <div className="rounded-md bg-alpha-100 px-3 py-2.5">
+      <p className="label-micro">What a caller hears</p>
+      <ul className="mt-1.5 grid gap-1 sm:grid-cols-3">
+        {samples.map((miles) => (
+          <li key={miles} className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="text-gray-900">{miles} mi out</span>
+            <span className="font-mono text-gray-1000 tnum">
+              ${(quoteDelivery(zone, miles).feeCents / 100).toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-gray-700">
+        {placed
+          ? "Measured from your address. Beyond the zone, the agent offers collection instead."
+          : "Save to place your address on the map — distance pricing needs it."}
+      </p>
     </div>
   );
 }

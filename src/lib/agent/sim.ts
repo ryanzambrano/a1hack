@@ -15,6 +15,7 @@
 
 import { adminClient } from "@/lib/supabase/admin";
 import { loadShop } from "@/lib/server/catalog";
+import { geocode, isPlaced } from "@/lib/server/geo";
 import { type BrainTurn, type CompleteFn, runTurn } from "./brain";
 import { type CallState, emptyState, rememberTurn } from "./ontology";
 import { unbackedPrices } from "./policy";
@@ -48,19 +49,22 @@ export interface ScenarioContext {
   closedDay: string | null;
 }
 
+/**
+ * Something the scenario needs to exist before it means anything. The catalog
+ * and the archive are seeded by different scripts and the demo reset clears
+ * the catalog, so a run with an empty table must report "skipped, seed it"
+ * rather than a pile of assertion failures that look like a broken agent.
+ * "delivery" additionally needs a working geocoder, which needs the network.
+ */
+export type Fixture = "catalog" | "archive" | "closedDay" | "delivery";
+
 export interface Scenario {
   name: string;
   /** What the caller says, one entry per turn. */
   says: string[] | ((ctx: ScenarioContext) => string[]);
   /** Canned model replies, consumed in order. Omit for model-free paths. */
   script?: string[] | ((ctx: ScenarioContext) => string[]);
-  /**
-   * Fixture this scenario needs. The catalog and the archive are seeded by
-   * different scripts and the demo reset clears the catalog, so a run with an
-   * empty table must report "skipped, seed it" rather than a pile of
-   * assertion failures that look like a broken agent.
-   */
-  requires?: "catalog" | "archive" | "closedDay";
+  requires?: Fixture | Fixture[];
   expect: (r: Recording) => string[] | Promise<string[]>;
 }
 
@@ -299,6 +303,172 @@ export const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "a wedding anniversary is an ordinary cake, not a handoff",
+    says: ["It's for my parents' fortieth wedding anniversary"],
+    script: [speak("Forty years, how lovely. Roughly how many people are we feeding?")],
+    expect: (r) => {
+      const f: string[] = [];
+      const t = r.turns[0];
+      // The word "wedding" used to end the call here, which is the single most
+      // expensive false positive the agent had: an ordinary celebration cake
+      // handed to a human for no reason.
+      if (t.handoff) f.push("handed off an anniversary cake as if it were a wedding");
+      if (t.tools.includes("escalate")) f.push("escalated an anniversary cake");
+      if (t.done) f.push("ended the call on the first turn");
+      return f;
+    },
+  },
+  {
+    name: "a wedding cake itself still goes to the head baker",
+    says: ["I need a three tier wedding cake for two hundred guests"],
+    expect: (r) => (r.turns[0].handoff ? [] : ["a real wedding cake should still escalate"]),
+  },
+  {
+    name: "a delivery inside the zone is priced and lands on the order total",
+    requires: ["catalog", "delivery"],
+    says: [
+      "A chocolate fudge cake for 20 people please",
+      "Could you deliver it to 2000 South Lamar Boulevard, Austin?",
+      "Next Saturday",
+      "Ten in the morning, it's for Sarah",
+      "Yes, that's right",
+    ],
+    script: [
+      call("price_cake", { product: "chocolate fudge", choices: ["24 slices"] }),
+      speak("That's the twenty-four slice one. When would you like it?"),
+      call("quote_delivery", { address: "2000 South Lamar Boulevard, Austin, TX" }),
+      speak("We can get that to you. Which day would you like it?"),
+      call("check_date", { when: "next Saturday" }),
+      speak("Saturday works. What time suits?"),
+      call("book_order", { pickup_time: "10", customer_name: "Sarah" }),
+      speak("You're all booked.", true),
+    ],
+    expect: async (r) => {
+      const f: string[] = [];
+      const [quote] = resultsOf(r, "quote_delivery");
+      if (!quote) return ["expected quote_delivery to run"];
+      if (!quote.ok) return [`delivery was refused: ${String(quote.reason)}`];
+      if (!quote.deliveryFee) f.push("no delivery fee was returned");
+      if (typeof quote.miles !== "number") f.push("no distance was measured");
+
+      const plan = r.state.delivery;
+      if (!plan) return [...f, "the delivery was not recorded on the call state"];
+      if (r.state.draft.fulfillment !== "delivery") {
+        f.push("the order is still marked for collection");
+      }
+
+      const booked = r.state.booked;
+      if (!booked) return [...f, "no order was booked"];
+      if (booked.fulfillment !== "delivery") f.push("the booked order is not a delivery");
+
+      // The whole point: the fee the tool computed is on the money the
+      // customer owes, not just mentioned out loud.
+      const { data: order } = await adminClient()
+        .from("orders")
+        .select("total_cents, delivery_fee_cents, delivery_address, fulfillment")
+        .eq("order_number", booked.orderNumber)
+        .maybeSingle();
+      if (!order) return [...f, `order ${booked.orderNumber} is not in the orders table`];
+      if (order.delivery_fee_cents !== plan.feeCents) {
+        f.push(`stored fee ${order.delivery_fee_cents} != quoted ${plan.feeCents}`);
+      }
+      if (order.fulfillment !== "delivery") f.push("stored order is not a delivery");
+      if (!order.delivery_address) f.push("stored order has no delivery address");
+      if (order.total_cents <= plan.feeCents) {
+        f.push("the total does not look like a cake plus a delivery");
+      }
+      if (r.unbacked.length) f.push(`unbacked prices: ${r.unbacked.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "an address outside the zone is refused rather than quoted",
+    requires: "delivery",
+    says: ["Do you deliver to San Antonio?"],
+    script: [
+      call("quote_delivery", { address: "San Antonio, TX" }),
+      speak("That's further than we drive, but you're very welcome to collect."),
+    ],
+    expect: (r) => {
+      const [quote] = resultsOf(r, "quote_delivery");
+      if (!quote) return ["expected quote_delivery to run"];
+      const f: string[] = [];
+      if (quote.ok) f.push("San Antonio was accepted as inside a 15 mile zone");
+      if (!quote.outsideZone) f.push("the refusal did not say it was out of range");
+      // Nothing may be left behind that would let a booking go out as a
+      // delivery nobody priced.
+      if (r.state.delivery) f.push("an unpriced delivery was left on the call state");
+      if (r.state.draft.fulfillment !== "pickup") f.push("the order was left set to delivery");
+      return f;
+    },
+  },
+  {
+    name: "payment taken on the call is really recorded against the order",
+    requires: "catalog",
+    says: [
+      "A carrot cake for 10 people",
+      "Next Saturday",
+      "Ten in the morning, name is Dan",
+      "Yes, and I'll pay now by card",
+    ],
+    script: [
+      call("price_cake", { product: "carrot", choices: ["12 slices"] }),
+      speak("Lovely. Which day would you like it?"),
+      call("check_date", { when: "next Saturday" }),
+      speak("That works. What time suits?"),
+      call("book_order", { pickup_time: "10", customer_name: "Dan" }),
+      speak("Booked. Would you like to pay now or on the day?"),
+      call("take_payment", { method: "card", card_last4: "4242" }),
+      speak("That's gone through, thank you.", true),
+    ],
+    expect: async (r) => {
+      const f: string[] = [];
+      const [payment] = resultsOf(r, "take_payment");
+      if (!payment) return ["expected take_payment to run"];
+      if (!payment.ok) return [`payment failed: ${String(payment.reason)}`];
+
+      const booked = r.state.booked;
+      if (!booked) return [...f, "no order was booked"];
+      if (!r.state.payment) f.push("the payment was not recorded on the call state");
+      if (r.state.payment && r.state.payment.amountCents !== booked.totalCents) {
+        f.push("the amount charged is not the order total");
+      }
+
+      const { data: order } = await adminClient()
+        .from("orders")
+        .select("payment_status, payment_reference, payment_provider")
+        .eq("order_number", booked.orderNumber)
+        .maybeSingle();
+      if (!order) return [...f, `order ${booked.orderNumber} is not in the orders table`];
+      if (order.payment_status === "pay_at_pickup") {
+        f.push("the order still says pay at pickup");
+      }
+      if (!order.payment_reference) f.push("no payment reference was stored");
+      // A card number must never survive the call, in any field.
+      if (/\d{9,}/.test(order.payment_reference)) {
+        f.push(`payment reference looks like it contains a card number: ${order.payment_reference}`);
+      }
+      if (r.unbacked.length) f.push(`unbacked prices: ${r.unbacked.join(", ")}`);
+      return f;
+    },
+  },
+  {
+    name: "payment cannot be taken before there is an order to charge",
+    says: ["Can I just pay you now?"],
+    script: [
+      call("take_payment", { method: "card" }),
+      speak("Let's get the cake sorted first, then I can take that."),
+    ],
+    expect: (r) => {
+      const [payment] = resultsOf(r, "take_payment");
+      if (!payment) return ["expected take_payment to run"];
+      const f: string[] = [];
+      if (payment.ok) f.push("charged a caller with no order");
+      if (r.state.payment) f.push("a payment was recorded with no order");
+      return f;
+    },
+  },
+  {
     name: "the agent cannot state a price no tool produced",
     says: ["How much for a chocolate cake?"],
     script: [speak("That'll be $999 for the chocolate cake.")],
@@ -421,7 +591,7 @@ export async function runScenario(
         complete,
       });
 
-      recording.unbacked.push(...unbackedPrices(turn.say, state));
+      recording.unbacked.push(...unbackedPrices(turn.say, state, shop.profile));
       recording.turns.push({
         said,
         reply: turn.say,
@@ -451,24 +621,33 @@ export async function runScenario(
 }
 
 /** Which fixtures are actually present right now. */
-async function availableFixtures(): Promise<Set<string>> {
+async function availableFixtures(): Promise<Set<Fixture>> {
   const sb = adminClient();
   const [catalog, archive] = await Promise.all([
     sb.from("products").select("id", { count: "exact", head: true }).eq("active", true),
     sb.from("archive_cakes").select("id", { count: "exact", head: true }).eq("active", true),
   ]);
-  const present = new Set<string>();
+  const present = new Set<Fixture>();
   if ((catalog.count ?? 0) > 0) present.add("catalog");
   if ((archive.count ?? 0) > 0) present.add("archive");
   const shop = await loadShop();
   if (shop.closedWeekdays.length) present.add("closedDay");
+
+  // Delivery needs three things, and the third is the network. One probe
+  // decides it for the whole run, so a laptop on a bad connection reports
+  // "skipped" once instead of failing every delivery assertion.
+  if (shop.profile.fulfillment.includes("delivery") && isPlaced(shop.profile)) {
+    if (await geocode("Austin, TX")) present.add("delivery");
+  }
   return present;
 }
 
-const SEED_HINT: Record<string, string> = {
+const SEED_HINT: Record<Fixture, string> = {
   catalog: "no active products — seed the storefront catalog (POST /api/shop/seed)",
   archive: "no archive cakes — run `node scripts/ingest-archive.mjs <folder>`",
   closedDay: "this bakery is never closed, so there is no closed day to refuse",
+  delivery:
+    "delivery is off, the shop address has not been placed on the map (re-save /setup), or the geocoder is unreachable",
 };
 
 export async function runAll(options: { keep?: boolean } = {}): Promise<{
@@ -481,13 +660,19 @@ export async function runAll(options: { keep?: boolean } = {}): Promise<{
   const results: ScenarioResult[] = [];
 
   for (const [i, scenario] of SCENARIOS.entries()) {
-    if (scenario.requires && !fixtures.has(scenario.requires)) {
+    const needs = scenario.requires
+      ? Array.isArray(scenario.requires)
+        ? scenario.requires
+        : [scenario.requires]
+      : [];
+    const missing = needs.find((fixture) => !fixtures.has(fixture));
+    if (missing) {
       results.push({
         name: scenario.name,
         pass: true,
         failures: [],
         transcript: [],
-        skipped: SEED_HINT[scenario.requires],
+        skipped: SEED_HINT[missing],
       });
       continue;
     }
