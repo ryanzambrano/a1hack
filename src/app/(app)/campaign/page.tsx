@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { IconArrowRight, IconMark, IconRefresh } from "@/components/icons";
 import {
@@ -13,15 +12,171 @@ import {
   DataRow,
   EmptyState,
   Metric,
+  Note,
   SectionLabel,
+  StatusDot,
 } from "@/components/ui";
 import { useApp } from "@/lib/store";
+
+interface MetaCampaign {
+  name: string;
+  live: boolean;
+  ads: { name: string; adsetName: string; status: string }[];
+}
+
+/** "Show the ads and the campaign that's live" — pulled through Pixero MCP. */
+function MetaLivePanel() {
+  const [campaigns, setCampaigns] = useState<MetaCampaign[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+
+  const publish = async () => {
+    setPublishing(true);
+    setPublishMsg(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/campaign/launch-meta", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setPublishMsg(
+        `Published to ${data.adAccountId} (created paused). ${data.publish}`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Publish failed");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/pixero/ads");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setCampaigns(data.campaigns);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load ads");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const idle = !publishing && !publishMsg && !error && !campaigns;
+
+  return (
+    <Card className="mt-4">
+      <CardHeader
+        title="Live on Meta"
+        description="Ads and campaigns from the connected Pixero workspace."
+        actions={
+          <>
+            <Button
+              variant="primary"
+              loading={publishing}
+              onClick={() => void publish()}
+            >
+              {publishing ? "Publishing via Pixero…" : "Publish to Meta"}
+            </Button>
+            <Button
+              loading={loading}
+              prefix={loading ? undefined : <IconRefresh />}
+              onClick={() => void load()}
+            >
+              {loading ? "Fetching…" : campaigns ? "Refresh" : "Show live ads"}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="flex flex-col gap-3 px-5 py-4">
+        {publishing && (
+          <p className="text-sm text-gray-900">
+            Pixero is staging the creative and launch plan — this takes a couple of
+            minutes. The campaign is created paused, so nothing spends yet.
+          </p>
+        )}
+
+        {publishMsg && (
+          <Note tone="green" className="whitespace-pre-wrap">
+            {publishMsg}
+          </Note>
+        )}
+
+        {error && <Note tone="red">{error}</Note>}
+
+        {campaigns?.length === 0 && (
+          <p className="text-sm text-gray-900">
+            No ads visible on the connected Meta accounts yet.
+          </p>
+        )}
+
+        {campaigns?.map((c) => (
+          <div
+            key={c.name}
+            className="rounded-lg border border-gray-200 bg-background px-4 py-3"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={c.live ? "green" : "gray"} dot pulse={c.live}>
+                {c.live ? "Live" : "Paused"}
+              </Badge>
+              <p className="min-w-0 truncate text-sm font-medium text-gray-1000">
+                {c.name}
+              </p>
+            </div>
+            <ul className="mt-2 space-y-1">
+              {c.ads.map((ad, i) => (
+                <li
+                  key={`${ad.name}-${i}`}
+                  className="flex items-center gap-2 text-sm text-gray-900"
+                >
+                  <StatusDot tone={ad.status === "ACTIVE" ? "green" : "gray"} />
+                  <span className="min-w-0 truncate">{ad.name}</span>
+                  {ad.adsetName && (
+                    <span className="shrink-0 font-mono text-[11px] text-gray-700">
+                      · {ad.adsetName}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
+        {idle && (
+          <p className="text-sm text-gray-900">
+            Nothing pulled yet — fetch the current state of the ad account, or publish
+            this campaign into it.
+          </p>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 export default function CampaignPage() {
   const { bakery, campaign, hydrated, busy, launchCampaign, generateCampaign } =
     useApp();
-  const router = useRouter();
   const [launching, setLaunching] = useState(false);
+  const [deployStatus, setDeployStatus] = useState<string | null>(null);
+  const [deployFailed, setDeployFailed] = useState(false);
+  const [streamLine, setStreamLine] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const esRef = useRef<EventSource | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRef = useRef(0);
+
+  const stopStream = () => {
+    esRef.current?.close();
+    esRef.current = null;
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = null;
+  };
+
+  useEffect(() => stopStream, []);
 
   if (!hydrated) return null;
 
@@ -42,10 +197,74 @@ export default function CampaignPage() {
 
   const live = campaign.status === "active";
 
-  const handleLaunch = () => {
+  const MAX_ATTEMPTS = 3;
+
+  const runAttempt = async (attempt: number) => {
+    const label = attempt > 1 ? `Attempt ${attempt}/${MAX_ATTEMPTS} — ` : "";
+    setStreamLine(`${label}Handing the campaign to Pixero…`);
+    const result = await launchCampaign();
+    if ("error" in result) {
+      finishFailed(`Launch failed: ${result.error}`, attempt);
+      return;
+    }
+
+    const es = new EventSource(
+      `/api/campaign/launch/stream?threadId=${result.threadId}&runId=${result.runId}`
+    );
+    esRef.current = es;
+    es.onmessage = (e) => {
+      const s = JSON.parse(e.data) as { status: string; message?: string | null };
+      if (s.status === "deployed") {
+        stopStream();
+        setStreamLine(null);
+        setLaunching(false);
+        setDeployFailed(false);
+        setDeployStatus(`Deployed to Meta (paused). ${s.message ?? ""}`);
+      } else if (s.status === "incomplete" || /error|failed/i.test(s.status)) {
+        stopStream();
+        finishFailed(s.message ?? s.status, attempt);
+      } else if (s.status === "poll_error") {
+        setStreamLine(`${label}Connection hiccup (${s.message ?? "retrying"})…`);
+      } else {
+        setStreamLine(
+          `${label}Pixero agent working — strategy, ad creative, staging, publish`
+        );
+      }
+    };
+    // Dropped connections auto-reconnect; keep the ticker running meanwhile.
+    es.onerror = () => setStreamLine(`${label}Reconnecting to Pixero stream…`);
+  };
+
+  const finishFailed = (message: string, attempt: number) => {
+    if (attempt < MAX_ATTEMPTS) {
+      setStreamLine(`Attempt ${attempt} didn't deploy — retrying…`);
+      void runAttempt(attempt + 1);
+      return;
+    }
+    setStreamLine(null);
+    setLaunching(false);
+    setDeployFailed(true);
+    const blockedByStaging = /no brief is open|open the brief|requires an open/i.test(
+      message
+    );
+    setDeployStatus(
+      blockedByStaging
+        ? `Pixero blocked headless staging after ${MAX_ATTEMPTS} attempts (its staging tool needs the brief open in the Pixero canvas). The strategy and ad creative ARE generated. To finish: open the newest SweetLeads brief in Pixero, tell the agent "stage the campaign plan", then click "Publish to Meta" below — it finds the staged plan and publishes it to your ad account.\n\nLast agent report: ${message}`
+        : `Deploy failed after ${MAX_ATTEMPTS} attempts: ${message}`
+    );
+  };
+
+  const handleLaunch = async () => {
     setLaunching(true);
-    launchCampaign();
-    setTimeout(() => router.push("/leads"), 1800);
+    setDeployStatus(null);
+    setDeployFailed(false);
+    startRef.current = Date.now();
+    setElapsed(0);
+    tickRef.current = setInterval(
+      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)),
+      1000
+    );
+    await runAttempt(1);
   };
 
   return (
@@ -149,7 +368,7 @@ export default function CampaignPage() {
                 variant="primary"
                 size="lg"
                 loading={launching}
-                onClick={handleLaunch}
+                onClick={() => void handleLaunch()}
               >
                 {launching ? "Launching…" : "Launch campaign"}
               </Button>
@@ -163,8 +382,29 @@ export default function CampaignPage() {
               </Button>
             </div>
           )}
+
+          {streamLine && (
+            <p className="flex items-center gap-2 font-mono text-xs text-gray-900">
+              <StatusDot tone="blue" pulse />
+              <span className="truncate">{streamLine}</span>
+              <span className="shrink-0 text-gray-700 tnum">
+                {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
+              </span>
+            </p>
+          )}
+
+          {deployStatus && (
+            <Note
+              tone={deployFailed ? "amber" : "green"}
+              className="whitespace-pre-wrap"
+            >
+              {deployStatus}
+            </Note>
+          )}
         </div>
       </div>
+
+      <MetaLivePanel />
     </div>
   );
 }
