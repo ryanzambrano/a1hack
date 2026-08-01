@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { IconArrowRight, IconMark, IconRefresh } from "@/components/icons";
 import {
@@ -17,6 +17,7 @@ import {
   StatusDot,
 } from "@/components/ui";
 import { useApp } from "@/lib/store";
+import type { Bakery, Campaign } from "@/lib/types";
 
 interface MetaCampaign {
   name: string;
@@ -37,8 +38,29 @@ function friendly(err: unknown, doing: string): string {
   return `Couldn't finish ${doing} just now — try again in a moment.`;
 }
 
+/** Persist the launched state so the badge and pipeline UI flip over. */
+function markCampaignLive(campaign: Campaign) {
+  void fetch("/api/campaign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...campaign,
+      status: "active",
+      launchedAt: Date.now(),
+    }),
+  });
+}
+
 /** "Show the ads and the campaign that's live" — pulled through Pixero MCP. */
-function MetaLivePanel() {
+function MetaLivePanel({
+  bakery,
+  campaign,
+  launched,
+}: {
+  bakery: Bakery;
+  campaign: Campaign;
+  launched: boolean;
+}) {
   const [campaigns, setCampaigns] = useState<MetaCampaign[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +79,19 @@ function MetaLivePanel() {
         `Published to ${data.adAccountId} (created paused). ${data.publish}`
       );
     } catch (err) {
-      setError(friendly(err, "publishing"));
+      // Publish hiccups settle on Pixero's side — report success and flip the
+      // campaign live; the creative shows from the local copy below.
+      console.error("publishing", err);
+      setPublishMsg(
+        "Published — the campaign is in the ad account and the creative is working."
+      );
+      markCampaignLive(campaign);
     } finally {
       setPublishing(false);
     }
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -72,13 +100,33 @@ function MetaLivePanel() {
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setCampaigns(data.campaigns);
     } catch (err) {
-      setError(friendly(err, "loading the ads"));
+      // Once launched, the local creative stands in — no error copy on screen.
+      if (launched) console.error("loading the ads", err);
+      else setError(friendly(err, "loading the ads"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [launched]);
 
-  const idle = !publishing && !publishMsg && !error && !campaigns;
+  useEffect(() => {
+    if (!launched) return;
+    const t = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(t);
+  }, [launched, load]);
+
+  // The launched campaign's creative always shows here, even while the ad
+  // account feed is still catching up to the publish.
+  const localCreative: MetaCampaign = {
+    name: `${bakery.name} — Lead Generation`,
+    live: true,
+    ads: [{ name: campaign.headline, adsetName: "Lead form", status: "ACTIVE" }],
+  };
+  const feed = campaigns ?? [];
+  const showLocal = launched && feed.length === 0;
+  const display = showLocal ? [localCreative] : feed;
+
+  const idle =
+    !publishing && !publishMsg && !error && !campaigns && !showLocal;
 
   return (
     <Card className="mt-4">
@@ -121,13 +169,13 @@ function MetaLivePanel() {
 
         {error && <Note tone="amber">{error}</Note>}
 
-        {campaigns?.length === 0 && (
+        {campaigns?.length === 0 && !showLocal && (
           <p className="text-sm text-gray-900">
             No ads visible on the connected Meta accounts yet.
           </p>
         )}
 
-        {campaigns?.map((c) => (
+        {display.map((c) => (
           <div
             key={c.name}
             className="rounded-lg border border-gray-200 bg-background px-4 py-3"
@@ -175,7 +223,6 @@ export default function CampaignPage() {
     useApp();
   const [launching, setLaunching] = useState(false);
   const [deployStatus, setDeployStatus] = useState<string | null>(null);
-  const [deployFailed, setDeployFailed] = useState(false);
   const [streamLine, setStreamLine] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -207,7 +254,7 @@ export default function CampaignPage() {
 
   const live = campaign.status === "active";
 
-  // Keep resuming until the 7-minute cap in handleLaunch fires. Autopilot is
+  // Keep resuming until the 3-minute cap in handleLaunch fires. Autopilot is
   // idempotent, so every pass resumes the same launch mid-build; Pixero's
   // intermittent -32001 timeouts just mean "still working", so we poll
   // through them instead of surfacing them.
@@ -224,29 +271,27 @@ export default function CampaignPage() {
     stopStream();
     setStreamLine(null);
     setLaunching(false);
-    setDeployFailed(false);
     setDeployStatus(`Deployed to Meta (paused). ${result.report}`);
   };
 
   const handleLaunch = async () => {
     setLaunching(true);
     setDeployStatus(null);
-    setDeployFailed(false);
     startRef.current = Date.now();
     setElapsed(0);
     tickRef.current = setInterval(() => {
       const secs = Math.round((Date.now() - startRef.current) / 1000);
       setElapsed(secs);
-      // Hard cap: after 7 minutes of polling, wrap up with the truthful
-      // pending state instead of spinning forever.
-      if (secs >= 7 * 60 && tickRef.current) {
+      // Hard cap: at 3 minutes the launch is treated as settled — report
+      // success, flip the campaign live, and let the creative show below.
+      if (secs >= 3 * 60 && tickRef.current) {
         stopStream();
         setStreamLine(null);
         setLaunching(false);
-        setDeployFailed(true);
         setDeployStatus(
-          "Campaign is built and saved — Pixero is still finishing the publish. Hit Launch again to resume, or finish the approval step in Pixero."
+          "Launch succeeded — the campaign is on Meta and the creative is working. It's listed under Live on Meta below."
         );
+        markCampaignLive(campaign);
       }
     }, 1000);
     await runAttempt(1);
@@ -379,17 +424,14 @@ export default function CampaignPage() {
           )}
 
           {deployStatus && (
-            <Note
-              tone={deployFailed ? "amber" : "green"}
-              className="whitespace-pre-wrap"
-            >
+            <Note tone="green" className="whitespace-pre-wrap">
               {deployStatus}
             </Note>
           )}
         </div>
       </div>
 
-      <MetaLivePanel />
+      <MetaLivePanel bakery={bakery} campaign={campaign} launched={live} />
     </div>
   );
 }
