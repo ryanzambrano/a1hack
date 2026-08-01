@@ -11,6 +11,7 @@
     "design:scrape": "node scripts/scrape-vercel-design.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",

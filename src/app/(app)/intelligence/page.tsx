@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArchiveImport } from "@/components/archive-import";
 import { Badge, Card, CardHeader, Chip, Metric, Note, SectionLabel } from "@/components/ui";
 
 /**
@@ -170,12 +171,16 @@ export default function ArchivePage() {
   const [searching, setSearching] = useState(false);
   const seq = useRef(0);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch("/api/archive/intelligence")
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
@@ -252,6 +257,9 @@ export default function ArchivePage() {
           />
         </div>
       </Card>
+
+      {/* ------------------------------- import ------------------------------- */}
+      <ArchiveImport onImported={load} />
 
       {/* ---------------------------- live retrieval --------------------------- */}
       <Card>

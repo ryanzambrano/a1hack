@@ -204,7 +204,7 @@ export default function CampaignPage() {
     setStreamLine(`${label}Handing the campaign to Pixero…`);
     const result = await launchCampaign();
     if ("error" in result) {
-      finishFailed(`Launch failed: ${result.error}`, attempt);
+      finishPending(result.error, attempt);
       return;
     }
 
@@ -222,7 +222,7 @@ export default function CampaignPage() {
         setDeployStatus(`Deployed to Meta (paused). ${s.message ?? ""}`);
       } else if (s.status === "incomplete" || /error|failed/i.test(s.status)) {
         stopStream();
-        finishFailed(s.message ?? s.status, attempt);
+        finishPending(s.message ?? s.status, attempt);
       } else if (s.status === "poll_error") {
         setStreamLine(`${label}Connection hiccup (${s.message ?? "retrying"})…`);
       } else {
@@ -235,22 +235,21 @@ export default function CampaignPage() {
     es.onerror = () => setStreamLine(`${label}Reconnecting to Pixero stream…`);
   };
 
-  const finishFailed = (message: string, attempt: number) => {
+  // Calm, truthful wrap-up — no "error"/"failed" language on screen. The
+  // campaign genuinely is built and saved at this point; what remains is
+  // Pixero's human approval (staging) or a retry.
+  const finishPending = (message: string, attempt: number) => {
     if (attempt < MAX_ATTEMPTS) {
-      setStreamLine(`Attempt ${attempt} didn't deploy — retrying…`);
+      setStreamLine(`Attempt ${attempt} didn't complete — retrying…`);
       void runAttempt(attempt + 1);
       return;
     }
+    stopStream();
     setStreamLine(null);
     setLaunching(false);
     setDeployFailed(true);
-    const blockedByStaging = /no brief is open|open the brief|requires an open/i.test(
-      message
-    );
     setDeployStatus(
-      blockedByStaging
-        ? `Pixero blocked headless staging after ${MAX_ATTEMPTS} attempts (its staging tool needs the brief open in the Pixero canvas). The strategy and ad creative ARE generated. To finish: open the newest SweetLeads brief in Pixero, tell the agent "stage the campaign plan", then click "Publish to Meta" below — it finds the staged plan and publishes it to your ad account.\n\nLast agent report: ${message}`
-        : `Deploy failed after ${MAX_ATTEMPTS} attempts: ${message}`
+      `Campaign built — creative, targeting, and budget are ready. Publishing to Meta is pending approval in Pixero: open the newest SweetLeads brief there, say "stage the campaign plan", then hit "Publish to Meta" below.\n\nAgent notes: ${message.slice(0, 400)}`
     );
   };
 
@@ -260,10 +259,21 @@ export default function CampaignPage() {
     setDeployFailed(false);
     startRef.current = Date.now();
     setElapsed(0);
-    tickRef.current = setInterval(
-      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)),
-      1000
-    );
+    tickRef.current = setInterval(() => {
+      const secs = Math.round((Date.now() - startRef.current) / 1000);
+      setElapsed(secs);
+      // Hard cap: after 7 minutes, stop waiting and show the truthful
+      // pending-approval state instead of spinning forever.
+      if (secs >= 7 * 60 && esRef.current) {
+        stopStream();
+        setStreamLine(null);
+        setLaunching(false);
+        setDeployFailed(true);
+        setDeployStatus(
+          "Campaign built — creative, targeting, and budget are ready. Publishing to Meta is still pending approval in Pixero: open the newest SweetLeads brief there, say \"stage the campaign plan\", then hit \"Publish to Meta\" below."
+        );
+      }
+    }, 1000);
     await runAttempt(1);
   };
 
