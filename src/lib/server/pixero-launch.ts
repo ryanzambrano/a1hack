@@ -59,7 +59,8 @@ export async function publishCampaignToMeta(): Promise<MetaPublishResult> {
       );
 
     // A plan may already be staged (e.g. a previous attempt timed out after
-    // staging finished) — publish it directly instead of staging again.
+    // staging finished) — publish it directly instead of staging again. Skip
+    // plans that were already published to avoid duplicate Meta campaigns.
     if (canvas) {
       const status = toolResultText(
         await client.callTool({
@@ -68,6 +69,14 @@ export async function publishCampaignToMeta(): Promise<MetaPublishResult> {
         })
       );
       if (!/request failed|no launch plan/i.test(status)) {
+        if (/published|campaign.?id/i.test(status)) {
+          return {
+            canvasId: canvas.id,
+            staging: "Launch plan already published — nothing to do.",
+            publish: status.slice(0, 1500),
+            adAccountId: PIXERO_AD_ACCOUNT_ID,
+          };
+        }
         const publish = await publishPlan(canvas.id);
         return {
           canvasId: canvas.id,
@@ -80,12 +89,10 @@ export async function publishCampaignToMeta(): Promise<MetaPublishResult> {
 
     const brief = `Lead-generation Meta campaign for ${bakery.name} (${bakery.location}), a bakery selling ${bakery.cakeTypes.join(", ")} at $${bakery.priceMin}–$${bakery.priceMax}. Ad copy — headline: "${campaign.headline}" body: "${campaign.body}" CTA: "${campaign.cta}". Target audience: ${campaign.audience}. Daily budget: $${campaign.dailyBudget}. Objective: lead form submissions (name + phone).`;
 
-    // The agent won't stage a plan without an approved creative on the brief,
-    // so explicitly authorize generating one static image.
-    const creativeNote = `If the brief has no approved creative, generate ONE static image ad creative for it (appetizing custom-cake photo style, headline text baked in, Meta-safe centered layout), approve it, and use it in the plan. Do not ask for confirmation.`;
-    const instruction = canvas
-      ? `On canvas "${canvas.name}" (id ${canvas.id}), stage a Meta launch plan for this campaign. ${creativeNote} STAGE ONLY — do NOT publish, do NOT activate, do NOT spend. ${brief}`
-      : `Create a canvas for this campaign and stage a Meta launch plan on it. ${creativeNote} STAGE ONLY — do NOT publish, do NOT activate, do NOT spend. ${brief}`;
+    // A delegated task session cannot access pre-existing briefs, and it won't
+    // stage a plan without an approved creative — so it must create its own
+    // brief and generate the creative itself.
+    const instruction = `Create a NEW brief in this conversation named "${bakery.name} — SweetLeads Launch" and stage a Meta launch plan on it. Generate ONE static image ad creative (appetizing custom-cake photo style, headline text baked in, Meta-safe centered layout), approve it, and use it in the plan. Do not ask for confirmation. STAGE ONLY — do NOT publish, do NOT activate, do NOT spend. ${brief}`;
 
     const started = JSON.parse(
       toolResultText(
@@ -122,15 +129,14 @@ export async function publishCampaignToMeta(): Promise<MetaPublishResult> {
       }
     }
 
-    if (!canvas) {
-      const after = await listCanvases();
-      const beforeIds = new Set(before.map((c) => c.id));
-      canvas =
-        after.find((c) => !beforeIds.has(c.id) && nameMatch(c)) ??
-        after.find((c) => !beforeIds.has(c.id)) ??
-        null;
-      if (!canvas) throw new Error("Staging finished but no canvas was found.");
-    }
+    // The agent staged on a brief it created — find it by diffing the list.
+    const after = await listCanvases();
+    const beforeIds = new Set(before.map((c) => c.id));
+    canvas =
+      after.find((c) => !beforeIds.has(c.id) && nameMatch(c)) ??
+      after.find((c) => !beforeIds.has(c.id)) ??
+      null;
+    if (!canvas) throw new Error("Staging finished but no new canvas was found.");
 
     const publish = await publishPlan(canvas.id);
 
