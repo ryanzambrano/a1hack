@@ -95,8 +95,8 @@ function MetaLivePanel() {
       <div className="flex flex-col gap-3 px-5 py-4">
         {publishing && (
           <p className="text-sm text-gray-900">
-            Pixero is staging the creative and launch plan — this takes a couple of
-            minutes. The campaign is created paused, so nothing spends yet.
+            Pixero autopilot is building the creative and publishing — this takes a
+            couple of minutes. The campaign is created paused, so nothing spends yet.
           </p>
         )}
 
@@ -165,13 +165,10 @@ export default function CampaignPage() {
   const [deployFailed, setDeployFailed] = useState(false);
   const [streamLine, setStreamLine] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const esRef = useRef<EventSource | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startRef = useRef(0);
 
   const stopStream = () => {
-    esRef.current?.close();
-    esRef.current = null;
     if (tickRef.current) clearInterval(tickRef.current);
     tickRef.current = null;
   };
@@ -201,46 +198,26 @@ export default function CampaignPage() {
 
   const runAttempt = async (attempt: number) => {
     const label = attempt > 1 ? `Attempt ${attempt}/${MAX_ATTEMPTS} — ` : "";
-    setStreamLine(`${label}Handing the campaign to Pixero…`);
+    setStreamLine(
+      `${label}Pixero autopilot running — strategy, ad creative, publish…`
+    );
     const result = await launchCampaign();
     if ("error" in result) {
       finishPending(result.error, attempt);
       return;
     }
-
-    const es = new EventSource(
-      `/api/campaign/launch/stream?threadId=${result.threadId}&runId=${result.runId}`
-    );
-    esRef.current = es;
-    es.onmessage = (e) => {
-      const s = JSON.parse(e.data) as { status: string; message?: string | null };
-      if (s.status === "deployed") {
-        stopStream();
-        setStreamLine(null);
-        setLaunching(false);
-        setDeployFailed(false);
-        setDeployStatus(`Deployed to Meta (paused). ${s.message ?? ""}`);
-      } else if (s.status === "incomplete" || /error|failed/i.test(s.status)) {
-        stopStream();
-        finishPending(s.message ?? s.status, attempt);
-      } else if (s.status === "poll_error") {
-        setStreamLine(`${label}Connection hiccup (${s.message ?? "retrying"})…`);
-      } else {
-        setStreamLine(
-          `${label}Pixero agent working — strategy, ad creative, staging, publish`
-        );
-      }
-    };
-    // Dropped connections auto-reconnect; keep the ticker running meanwhile.
-    es.onerror = () => setStreamLine(`${label}Reconnecting to Pixero stream…`);
+    stopStream();
+    setStreamLine(null);
+    setLaunching(false);
+    setDeployFailed(false);
+    setDeployStatus(`Deployed to Meta (paused). ${result.report}`);
   };
 
-  // Calm, truthful wrap-up — no "error"/"failed" language on screen. The
-  // campaign genuinely is built and saved at this point; what remains is
-  // Pixero's human approval (staging) or a retry.
+  // Calm, truthful wrap-up — no "error"/"failed" language on screen.
+  // Autopilot is idempotent, so every retry resumes the same launch mid-build.
   const finishPending = (message: string, attempt: number) => {
     if (attempt < MAX_ATTEMPTS) {
-      setStreamLine(`Attempt ${attempt} didn't complete — retrying…`);
+      setStreamLine(`Attempt ${attempt} didn't complete — resuming…`);
       void runAttempt(attempt + 1);
       return;
     }
@@ -249,7 +226,7 @@ export default function CampaignPage() {
     setLaunching(false);
     setDeployFailed(true);
     setDeployStatus(
-      `Campaign built — creative, targeting, and budget are ready. Publishing to Meta is pending approval in Pixero: open the newest SweetLeads brief there, say "stage the campaign plan", then hit "Publish to Meta" below.\n\nAgent notes: ${message.slice(0, 400)}`
+      `Autopilot is still building the launch — progress is saved, so hit Launch again to resume where it left off.\n\nAgent notes: ${message.slice(0, 400)}`
     );
   };
 
@@ -262,15 +239,14 @@ export default function CampaignPage() {
     tickRef.current = setInterval(() => {
       const secs = Math.round((Date.now() - startRef.current) / 1000);
       setElapsed(secs);
-      // Hard cap: after 7 minutes, stop waiting and show the truthful
-      // pending-approval state instead of spinning forever.
-      if (secs >= 7 * 60 && esRef.current) {
+      // Hard cap: after 7 minutes, stop waiting instead of spinning forever.
+      if (secs >= 7 * 60 && tickRef.current) {
         stopStream();
         setStreamLine(null);
         setLaunching(false);
         setDeployFailed(true);
         setDeployStatus(
-          "Campaign built — creative, targeting, and budget are ready. Publishing to Meta is still pending approval in Pixero: open the newest SweetLeads brief there, say \"stage the campaign plan\", then hit \"Publish to Meta\" below."
+          "Autopilot is taking longer than expected — progress is saved, so hit Launch again to resume where it left off."
         );
       }
     }, 1000);
