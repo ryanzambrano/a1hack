@@ -152,14 +152,20 @@ export default function CampaignPage() {
     useApp();
   const [launching, setLaunching] = useState(false);
   const [deployStatus, setDeployStatus] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [streamLine, setStreamLine] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const esRef = useRef<EventSource | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRef = useRef(0);
 
-  useEffect(
-    () => () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    },
-    []
-  );
+  const stopStream = () => {
+    esRef.current?.close();
+    esRef.current = null;
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = null;
+  };
+
+  useEffect(() => stopStream, []);
 
   if (!hydrated) return null;
 
@@ -183,41 +189,71 @@ export default function CampaignPage() {
 
   const live = campaign.status === "active";
 
-  const handleLaunch = async () => {
-    setLaunching(true);
-    setDeployStatus("Handing the campaign to Pixero…");
+  const MAX_ATTEMPTS = 3;
+
+  const runAttempt = async (attempt: number) => {
+    const label = attempt > 1 ? `Attempt ${attempt}/${MAX_ATTEMPTS} — ` : "";
+    setStreamLine(`${label}Handing the campaign to Pixero…`);
     const result = await launchCampaign();
     if ("error" in result) {
-      setDeployStatus(`Launch failed: ${result.error}`);
-      setLaunching(false);
+      finishFailed(`Launch failed: ${result.error}`, attempt);
       return;
     }
-    setDeployStatus(
-      "Pixero is generating the creative and publishing to your Meta ad account… (a few minutes)"
+
+    const es = new EventSource(
+      `/api/campaign/launch/stream?threadId=${result.threadId}&runId=${result.runId}`
     );
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `/api/campaign/launch?threadId=${result.threadId}&runId=${result.runId}`
+    esRef.current = es;
+    es.onmessage = (e) => {
+      const s = JSON.parse(e.data) as { status: string; message?: string | null };
+      if (s.status === "deployed") {
+        stopStream();
+        setStreamLine(null);
+        setLaunching(false);
+        setDeployStatus(`✅ Deployed to Meta (paused). ${s.message ?? ""}`);
+      } else if (s.status === "incomplete" || /error|failed/i.test(s.status)) {
+        stopStream();
+        finishFailed(s.message ?? s.status, attempt);
+      } else if (s.status === "poll_error") {
+        setStreamLine(`${label}Connection hiccup (${s.message ?? "retrying"})…`);
+      } else {
+        setStreamLine(
+          `${label}Pixero agent working — strategy, ad creative, staging, publish`
         );
-        const s = (await res.json()) as {
-          status?: string;
-          finalMessage?: string | null;
-          error?: string;
-        };
-        if (s.status === "success") {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setDeployStatus(`✅ Deployed to Meta. ${s.finalMessage ?? ""}`);
-        } else if (s.status === "error" || s.error) {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setDeployStatus(
-            `Deploy failed: ${s.error ?? s.finalMessage ?? "unknown error"}`
-          );
-        }
-      } catch {
-        /* transient poll failure — keep polling */
       }
-    }, 5000);
+    };
+    // Dropped connections auto-reconnect; keep the ticker running meanwhile.
+    es.onerror = () => setStreamLine(`${label}Reconnecting to Pixero stream…`);
+  };
+
+  const finishFailed = (message: string, attempt: number) => {
+    if (attempt < MAX_ATTEMPTS) {
+      setStreamLine(`Attempt ${attempt} didn't deploy — retrying…`);
+      void runAttempt(attempt + 1);
+      return;
+    }
+    setStreamLine(null);
+    setLaunching(false);
+    const blockedByStaging = /no brief is open|open the brief|requires an open/i.test(
+      message
+    );
+    setDeployStatus(
+      blockedByStaging
+        ? `Pixero blocked headless staging after ${MAX_ATTEMPTS} attempts (its staging tool needs the brief open in the Pixero canvas). The strategy and ad creative ARE generated. To finish: open the newest SweetLeads brief in Pixero, tell the agent "stage the campaign plan", then click "Publish to Meta" below — it finds the staged plan and publishes it to your ad account.\n\nLast agent report: ${message}`
+        : `Deploy failed after ${MAX_ATTEMPTS} attempts: ${message}`
+    );
+  };
+
+  const handleLaunch = async () => {
+    setLaunching(true);
+    setDeployStatus(null);
+    startRef.current = Date.now();
+    setElapsed(0);
+    tickRef.current = setInterval(
+      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)),
+      1000
+    );
+    await runAttempt(1);
   };
 
   return (
@@ -305,12 +341,6 @@ export default function CampaignPage() {
             </ol>
           </div>
 
-          {deployStatus && (
-            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 whitespace-pre-wrap">
-              {deployStatus}
-            </div>
-          )}
-
           {live ? (
             <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 p-5">
               <p className="text-sm font-medium text-green-800">
@@ -339,6 +369,22 @@ export default function CampaignPage() {
               >
                 {busy ? "Writing new creative…" : "↻ Regenerate creative"}
               </button>
+            </div>
+          )}
+
+          {streamLine && (
+            <p className="flex items-center gap-2 font-mono text-xs text-stone-500">
+              <span className="inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-sky-500" />
+              <span className="truncate">{streamLine}</span>
+              <span className="shrink-0 tabular-nums text-stone-400">
+                {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
+              </span>
+            </p>
+          )}
+
+          {deployStatus && (
+            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 whitespace-pre-wrap">
+              {deployStatus}
             </div>
           )}
         </div>
